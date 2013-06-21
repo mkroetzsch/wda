@@ -26,17 +26,7 @@ dp.registerProcessor(rpedcount)
 
 # Iterate through all daily dumps, newest first:
 df = datafetcher.DataFetcher()
-for daily in df.getNewerDailyDates() :
-	logging.log('Analysing daily ' + daily + ' ...')
-	file = df.getDailyFile(daily)
-	dp.processFile(file)
-	file.close()
-
-# Finally also process the latest main dump:
-logging.log('Analysing latest dump ' + df.getLatestDumpDate() + ' ...')
-file = df.getLatestDumpFile()
-dp.processFile(file)
-file.close()
+#df.processRecentDumps(dp)
 
 ### For testing: just do one fixed daily (needs to be downloaded first if not recent)
 #file = df.getDailyFile("20130531")
@@ -47,14 +37,14 @@ file.close()
 os.chdir(os.path.dirname(os.path.realpath(__file__))) # change back into our base directory if needed
 if not os.path.exists('results') :
 	os.makedirs('results')
-os.chdir('results')
-edits = open('edits.csv', 'w')
+
+curdate = df.getLatestDate()
+edits = open('results/edits-' + curdate + '.csv', 'w')
 rpedcount.writeResults(edits)
 edits.close()
-useredits = open('editsByUser.csv', 'w')
+useredits = open('results/editsByUser-' + curdate + '.csv', 'w')
 rpedcount.writeEditsByUser(useredits)
 useredits.close()
-cdBase()
 
 
 

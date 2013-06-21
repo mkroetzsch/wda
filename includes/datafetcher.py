@@ -8,7 +8,7 @@ import logging
 # If can download required dumps (and daily dumps) and produce
 # a list of the relevant files for other components to process.
 # Main entry points are getNewerDailyDates(), getDailyFile(),
-# and getLatestDumpFile().
+# getLatestDumpFile(), and (easiest) processRecentDumps().
 class DataFetcher:
 	def __init__(self):
 		self.basePath = os.getcwd()
@@ -34,6 +34,29 @@ class DataFetcher:
 				self.dailies.append(date)
 			logging.log(" found " + str(len(self.dailies)) + " daily exports.")
 		return self.dailies
+
+	# Return the most recent date up to which data is available.
+	def getLatestDate(self):
+		nds = self.getNewerDailyDates()
+		if nds:
+			return nds[0]
+		else:
+			return self.getLatestDumpDate()
+
+	# Convenience method to iterate over all available dump data,
+	# most recent first, using the given processor.
+	def processRecentDumps(self,dumpProcessor):
+		for daily in self.getNewerDailyDates() :
+			logging.log('Analysing daily ' + daily + ' ...')
+			file = self.getDailyFile(daily)
+			dumpProcessor.processFile(file)
+			file.close()
+
+		# Finally also process the latest main dump:
+		logging.log('Analysing latest dump ' + self.getLatestDumpDate() + ' ...')
+		file = self.getLatestDumpFile()
+		dumpProcessor.processFile(file)
+		file.close()
 
 	# Find out when the last successful dump happened.
 	def getLatestDumpDate(self):
