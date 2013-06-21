@@ -70,6 +70,8 @@ class RPEditCount(revisionprocessor.RevisionProcessor):
 
 	def writeResults(self, file):
 		file.write("index,date,bots,humans,anons,total\n")
+		if not self.humanEdits: # nothing to write
+			return
 		minDay = min(self.humanEdits.keys())
 		maxDay = max(self.humanEdits.keys())
 		for i in xrange(minDay, maxDay + 1):
