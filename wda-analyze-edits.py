@@ -26,7 +26,7 @@ dp.registerProcessor(rpedcount)
 
 # Iterate through all daily dumps, newest first:
 df = datafetcher.DataFetcher()
-#df.processRecentDumps(dp)
+df.processRecentDumps(dp)
 
 ### For testing: just do one fixed daily (needs to be downloaded first if not recent)
 #file = df.getDailyFile("20130531")
