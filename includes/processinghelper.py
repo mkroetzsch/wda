@@ -14,7 +14,7 @@ class ProcessingHelper:
 
 	def getVal(self, rev, rawContent):
 		if rev != self.valRev:
-			self.val = eval(rawContent.replace('&quot;', '"'))
+			self.val = eval(rawContent.replace('":null', '":0').replace('&quot;', '"'))
 			if 'claims' not in self.val: # make sure this is always set
 				self.val['claims'] = []
 			if 'description' not in self.val or not self.val['description']: # make sure this is always set and a dictionary

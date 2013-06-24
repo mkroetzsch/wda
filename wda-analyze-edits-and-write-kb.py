@@ -44,6 +44,7 @@ if not os.path.exists('results') :
 	os.makedirs('results')
 
 curdate = df.getLatestDate()
+output.write('# ' + curdate + "\n")
 edits = open('results/edits-' + curdate + '.csv', 'w')
 rpedcount.writeResults(edits)
 edits.close()
@@ -51,5 +52,6 @@ useredits = open('results/editsByUser-' + curdate + '.csv', 'w')
 rpedcount.writeEditsByUser(useredits)
 useredits.close()
 
+output.close()
 
 
