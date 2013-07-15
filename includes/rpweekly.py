@@ -70,7 +70,7 @@ class RPWeekly(revisionprocessor.RevisionProcessor):
 
 			#print "Writing data for " + self.curTitle + ' r' + str(self.curMaxRev) + ' day ' + str(self.maxDay) + ' dbRev: ' + str(dbRev)
 
-			val = self.helper.getVal(self.curTitle,self.curMaxRawContent)
+			val = self.helper.getVal(self.curMaxRev,self.curMaxRawContent)
 
 			#print "Content: "+ self.curMaxRawContent
 
