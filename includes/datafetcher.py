@@ -10,13 +10,14 @@ import logging
 # Main entry points are getNewerDailyDates(), getDailyFile(),
 # getLatestDumpFile(), and (easiest) processRecentDumps().
 class DataFetcher:
-	def __init__(self):
+	def __init__(self, offline = False):
 		self.basePath = os.getcwd()
 		self.dailies = False
 		self.newerdailies = False # Dates of dailies that are more recent than the dump
 		self.latestdump = False
 		self.maxrevid = False
 		self.stopdaily = False
+		self.offline = offline
 		# For testing; setting this avoids delays due to http requests:
 		#self.dailies = ['20130511', '20130512', '20130513', '20130514', '20130515', '20130516', '20130517', '20130518', '20130519', '20130520', '20130521', '20130522', '20130523', '20130524', '20130525', '20130526', '20130527', '20130528', '20130529', '20130530', '20130531', '20130601']
 		#self.latestdump = '20130514'
@@ -24,14 +25,25 @@ class DataFetcher:
 	# Find out which daily dump files are available on the Web.
 	def getDailyDates(self):
 		if not self.dailies:
-			logging.logMore("Fetching information about available daily exports ")
 			self.dailies = []
-			for line in urllib.urlopen('http://dumps.wikimedia.org/other/incr/wikidatawiki/') :
-				if not line.startswith('<tr><td class="n">') : continue
-				date = line[27:35]
-				if not re.match('\d\d\d\d\d\d\d\d', date) : continue
-				logging.logMore('.')
-				self.dailies.append(date)
+			if self.offline:
+				logging.logMore("Finding daily exports available locally ")
+				dataDirs = os.listdir("data")
+				for dirName in dataDirs:
+					if not dirName.startswith('daily'): continue
+					date = dirName[5:]
+					if not re.match('\d\d\d\d\d\d\d\d', date) : continue
+					logging.logMore('.')
+					self.dailies.append(date)
+				self.dailies = sorted(self.dailies)
+			else:
+				logging.logMore("Finding daily exports online ")
+				for line in urllib.urlopen('http://dumps.wikimedia.org/other/incr/wikidatawiki/') :
+					if not line.startswith('<tr><td class="n">') : continue
+					date = line[27:35]
+					if not re.match('\d\d\d\d\d\d\d\d', date) : continue
+					logging.logMore('.')
+					self.dailies.append(date)
 			logging.log(" found " + str(len(self.dailies)) + " daily exports.")
 		return self.dailies
 
@@ -48,9 +60,13 @@ class DataFetcher:
 	def processRecentDumps(self,dumpProcessor):
 		for daily in self.getNewerDailyDates() :
 			logging.log('Analysing daily ' + daily + ' ...')
-			file = self.getDailyFile(daily)
-			dumpProcessor.processFile(file)
-			file.close()
+			try:
+				file = self.getDailyFile(daily)
+				dumpProcessor.processFile(file)
+				file.close()
+			except EOFError as e:
+				logging.log('*** Error while reading file (' + str(e) + ").\n" + '*** Try deleting the daily directory for ' + daily + ' and download a new version.')
+				file.close()
 
 		# Finally also process the latest main dump:
 		logging.log('Analysing latest dump ' + self.getLatestDumpDate() + ' ...')
@@ -61,22 +77,35 @@ class DataFetcher:
 	# Find out when the last successful dump happened.
 	def getLatestDumpDate(self):
 		if not self.latestdump:
-			logging.logMore('Checking for the date of the last dump ')
-			self.latestdump = '20121026'
-			for line in urllib.urlopen('http://dumps.wikimedia.org/wikidatawiki/') :
-				if not line.startswith('<tr><td class="n">') : continue
-				date = line[27:35]
-				if not re.match('\d\d\d\d\d\d\d\d', date) : continue
-				logging.logMore('.')
-				#logging.log("Checking dump of " + date)
-				# check if dump is finished
-				finished = False
-				for md5 in urllib.urlopen('http://dumps.wikimedia.org/wikidatawiki/' + date + '/wikidatawiki-' + date + '-md5sums.txt') :
-					if md5.endswith('-pages-meta-history.xml.bz2' + "\n") :
-						finished = True
-				if finished :
-					self.latestdump = date
-			logging.log(" latest dump has been on " + self.latestdump)
+			if self.offline:
+				self.latestdump = '00000000'
+				logging.logMore('Checking for the date of the last local dump ')
+				dataDirs = os.listdir("data")
+				for dirName in dataDirs:
+					if not dirName.startswith('dump'): continue
+					date = dirName[4:]
+					if not re.match('\d\d\d\d\d\d\d\d', date) : continue
+					logging.logMore('.')
+					if date > self.latestdump:
+						self.latestdump = date
+			else:
+				logging.logMore('Checking for the date of the last online dump ')
+				self.latestdump = '20121026'
+				for line in urllib.urlopen('http://dumps.wikimedia.org/wikidatawiki/') :
+					if not line.startswith('<tr><td class="n">') : continue
+					date = line[27:35]
+					if not re.match('\d\d\d\d\d\d\d\d', date) : continue
+					logging.logMore('.')
+					#logging.log("Checking dump of " + date)
+					# check if dump is finished
+					finished = False
+					for md5 in urllib.urlopen('http://dumps.wikimedia.org/wikidatawiki/' + date + '/wikidatawiki-' + date + '-md5sums.txt') :
+						if md5.endswith('-pages-meta-history.xml.bz2' + "\n") :
+							finished = True
+					if finished :
+						self.latestdump = date
+
+			logging.log(" latest dump is " + self.latestdump)
 		return self.latestdump
 
 	# Change to the data directory.
@@ -148,13 +177,16 @@ class DataFetcher:
 				break
 
 			if not os.path.exists('pages-meta-hist-incr.xml.bz2') :
-				logging.logMore('downloading ... ')
-				if urllib.urlopen('http://dumps.wikimedia.org/other/incr/wikidatawiki/' + daily + '/status.txt').read() == 'done' :
-					urllib.urlretrieve('http://dumps.wikimedia.org/other/incr/wikidatawiki/' + daily + '/wikidatawiki-' + daily + '-pages-meta-hist-incr.xml.bz2', 'pages-meta-hist-incr.xml.bz2') #xxx
-					logging.log('done')
-					self.newerdailies.append(daily)
-				else :
-					logging.log('daily not done yet; download aborted')
+				if self.offline:
+					logging.log('not downloading daily in offline mode')
+				else:
+					logging.logMore('downloading ... ')
+					if urllib.urlopen('http://dumps.wikimedia.org/other/incr/wikidatawiki/' + daily + '/status.txt').read() == 'done' :
+						urllib.urlretrieve('http://dumps.wikimedia.org/other/incr/wikidatawiki/' + daily + '/wikidatawiki-' + daily + '-pages-meta-hist-incr.xml.bz2', 'pages-meta-hist-incr.xml.bz2') #xxx
+						logging.log('done')
+						self.newerdailies.append(daily)
+					else :
+						logging.log('daily not done yet; download aborted')
 			else:
 				logging.log('daily already downloaded')
 				self.newerdailies.append(daily)

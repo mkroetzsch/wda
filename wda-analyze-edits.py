@@ -14,6 +14,16 @@ import includes.logging as logging
 import includes.revisionprocessor as revisionprocessor
 import includes.rpedits as rpedit
 import os
+import argparse
+
+parser = argparse.ArgumentParser(description='Download and analyze Wikidata dump files to count user edits.')
+
+parser.add_argument('--offline', dest='offlineMode', action='store_const',\
+		const=True, default=False,\
+		help='use only previously downloaded files (default: get most recent data)')
+
+args = parser.parse_args()
+
 
 # Define which processing should happen on the data:
 dp = processdump.DumpProcessor()
@@ -25,7 +35,7 @@ dp.registerProcessor(rpedcount)
 #dp.registerProcessor(revisionprocessor.RPDebugLogger()) # Only for debugging
 
 # Iterate through all daily dumps, newest first:
-df = datafetcher.DataFetcher()
+df = datafetcher.DataFetcher(args.offlineMode)
 df.processRecentDumps(dp)
 
 ### For testing: just do one fixed daily (needs to be downloaded first if not recent)
