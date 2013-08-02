@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE rdf:RDF [
+	<!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
+	<!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+	<!ENTITY rdfs "http://www.w3.org/2000/01/rdf-schema#">
+	<!ENTITY owl "http://www.w3.org/2002/07/owl#">
+	<!ENTITY wikibase "http://www.wikidata.org/ontology#">
+]>
+
+<rdf:RDF
+	xmlns:xsd="&xsd;"
+	xmlns:rdf="&rdf;"
+	xmlns:rdfs="&rdfs;"
+	xmlns:owl="&owl;"
+	xmlns:wb="&wikibase;"
+>
+
+	<owl:Ontology rdf:about="&wikibase;">
+		<rdfs:label>Wikibase system ontology</rdfs:label>
+		<rdfs:comment>The system ontology of Wikibase, used to export user-created content.</rdfs:comment>
+	</owl:Ontology>
+
+	<!-- Basic classes -->
+
+	<owl:Class rdf:about="&wikibase;Entity">
+		<rdfs:label>item</rdfs:label>
+		<rdfs:comment>The class of Wikibase entities.</rdfs:comment>
+	</owl:Class>
+
+	<owl:Class rdf:about="&wikibase;Item">
+		<rdfs:label>item</rdfs:label>
+		<rdfs:comment>The class of Wikibase items.</rdfs:comment>
+		<rdfs:subClassOf rdf:about="&wikibase;Entity"/>
+	</owl:Class>
+
+	<owl:Class rdf:about="&wikibase;Property">
+		<rdfs:label>item</rdfs:label>
+		<rdfs:comment>The class of Wikibase properties.</rdfs:comment>
+		<rdfs:subClassOf rdf:about="&wikibase;Entity"/>
+		<!-- Note that Wikibase properties in this sense are treated as OWL individuals (punning). Hence this is not a subclass of rdfs:Property! -->
+	</owl:Class>
+
+	<owl:Class rdf:about="&wikibase;Statement">
+		<rdfs:label>statement</rdfs:label>
+		<rdfs:comment>The class of (reified) statements.</rdfs:comment>
+	</owl:Class>
+
+	<owl:Class rdf:about="&wikibase;Reference">
+		<rdfs:label>reference</rdfs:label>
+		<rdfs:comment>The class of (reified) references.</rdfs:comment>
+	</owl:Class>
+
+	<!-- Specifying information about Wikibase properties -->
+
+	<owl:Class rdf:about="&wikibase;Datatype">
+		<rdfs:label>datatype</rdfs:label>
+		<rdfs:comment>The class of Wikibase datatypes.</rdfs:comment>
+	</owl:Class>
+
+	<owl:ObjectProperty rdf:about="&wikibase;propertyType">
+		<rdfs:label>property type</rdfs:label>
+		<rdfs:comment>This property specifies the Wikibase Datatype of a Wikibase Property.</rdfs:comment>
+	</owl:ObjectProperty>
+
+	<wb:Datatype rdf:about="&wikibase;propertyTypeItem">
+		<rdfs:label>item</rdfs:label>
+		<rdfs:comment>The "item" datatype of Wikibase properties.</rdfs:comment>
+	</wb:Datatype>
+
+	<wb:Datatype rdf:about="&wikibase;propertyTypeString">
+		<rdfs:label>string</rdfs:label>
+		<rdfs:comment>The "string" datatype of Wikibase properties.</rdfs:comment>
+	</wb:Datatype>
+
+	<wb:Datatype rdf:about="&wikibase;propertyTypeCommonsMedia">
+		<rdfs:label>Commons media file</rdfs:label>
+		<rdfs:comment>The "Commons media file" datatype of Wikibase properties.</rdfs:comment>
+	</wb:Datatype>
+
+	<wb:Datatype rdf:about="&wikibase;propertyTypeTime">
+		<rdfs:label>time</rdfs:label>
+		<rdfs:comment>The "time" datatype of Wikibase properties.</rdfs:comment>
+	</wb:Datatype>
+
+	<wb:Datatype rdf:about="&wikibase;propertyTypeGlobeCoordinates">
+		<rdfs:label>geographic coordinates</rdfs:label>
+		<rdfs:comment>The "geographic coordinates" datatype of Wikibase properties.</rdfs:comment>
+	</wb:Datatype>
+
+	<wb:Datatype rdf:about="&wikibase;propertyTypeUrl">
+		<rdfs:label>URL</rdfs:label>
+		<rdfs:comment>The "URL" datatype of Wikibase properties.</rdfs:comment>
+	</wb:Datatype>
+
+	<!-- Encoding coordinates datavalues -->
+
+	<owl:Class rdf:about="&wikibase;GlobeCoordinatesValue">
+		<rdfs:label>coordinates datavalue</rdfs:label>
+		<rdfs:comment>The class of (reified) coordinates datavalues.</rdfs:comment>
+	</owl:Class>
+
+	<owl:ObjectProperty rdf:about="&wikibase;globe">
+		<rdfs:label>globe</rdfs:label>
+		<rdfs:comment>This property specifies the globe (e.g., Q20/Earth) of a coordinates datavalue.</rdfs:comment>
+	</owl:ObjectProperty>
+
+	<owl:DatatypeProperty rdf:about="&wikibase;latitude">
+		<rdfs:label>latitude</rdfs:label>
+		<rdfs:comment>This property specifies the latitude of a coordinates datavalue.</rdfs:comment>
+	</owl:DatatypeProperty>
+
+	<owl:DatatypeProperty rdf:about="&wikibase;longitude">
+		<rdfs:label>longitude</rdfs:label>
+		<rdfs:comment>This property specifies the longitude of a coordinates datavalue.</rdfs:comment>
+	</owl:DatatypeProperty>
+
+	<owl:DatatypeProperty rdf:about="&wikibase;altitude">
+		<rdfs:label>altitude</rdfs:label>
+		<rdfs:comment>This property specifies the optional altitude of a coordinates datavalue.</rdfs:comment>
+	</owl:DatatypeProperty>
+
+	<owl:DatatypeProperty rdf:about="&wikibase;gcPrecision">
+		<rdfs:label>precision</rdfs:label>
+		<rdfs:comment>This property specifies the precision of a coordinates datavalue as a maximal distance from the given location.</rdfs:comment>
+	</owl:DatatypeProperty>
+
+	<!-- Encoding time datavalues -->
+
+	<owl:Class rdf:about="&wikibase;TimeValue">
+		<rdfs:label>time datavalue</rdfs:label>
+		<rdfs:comment>The class of (reified) time datavalues.</rdfs:comment>
+	</owl:Class>
+
+	<owl:DatatypeProperty rdf:about="&wikibase;time">
+		<rdfs:label>time</rdfs:label>
+		<rdfs:comment>This property specifies the time point (in the Gregorian calendar) of a time datavalue. It can use values of type XML Schema dateTime, date, gYearMonth, or gYear depending on precision.</rdfs:comment>
+	</owl:DatatypeProperty>
+
+	<owl:DatatypeProperty rdf:about="&wikibase;timePrecision">
+		<rdfs:label>precision</rdfs:label>
+		<rdfs:comment>This property specifies the precision of a time datavalue as an integer. The meaning of values is: 11 (day), 10 (month), 9 (year), 8 (decade), ..., 1 (10^8 years), 0 (10^9 years)</rdfs:comment>
+	</owl:DatatypeProperty>
+
+	<owl:ObjectProperty rdf:about="&wikibase;preferredCalendar">
+		<rdfs:label>preferred calendar model</rdfs:label>
+		<rdfs:comment>This property specifies the preferred calendar to be used for displaying a time datavalue.</rdfs:comment>
+	</owl:ObjectProperty>
+</rdf:RDF>
