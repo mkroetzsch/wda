@@ -27,6 +27,11 @@ class ProcessingHelper:
 			if 'label' not in self.val or not self.val['label']: # make sure this is always set and a dictionary
 				self.val['label'] = {}
 			self.valRev = rev
+
+		#if '37.85' in str(self.val):
+			#print "\n\nRAWDATA\n\n" + rawContent
+			#print "\n\nVALUE\n\n" + str(self.val)
+			#exit()
 		return self.val
 
 	def getDateInfo(self, dateInfoStamp):
