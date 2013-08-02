@@ -18,3 +18,7 @@ class EntityProcessor:
 	# preceded by the string '     * '.
 	def logReport(self):
 		pass
+
+	# Finish processing (e.g., to add a footer and close files)
+	def close(self):
+		pass

@@ -37,8 +37,8 @@ class EPTurtleFile(entityprocessor.EntityProcessor):
 		self.output.write( "\nwo:precision\ta\to:DatatypeProperty ." )
 		self.output.write( "\nwo:time\ta\to:DatatypeProperty ." )
 		self.output.write( "\nwo:timePrecision\ta\to:DatatypeProperty ." )
-		self.output.write( "\nwo:timePrecisionAfter\ta\to:DatatypeProperty ." )
-		self.output.write( "\nwo:timePrecisionBefore\ta\to:DatatypeProperty ." )
+		#self.output.write( "\nwo:timePrecisionAfter\ta\to:DatatypeProperty ." ) # currently unused
+		#self.output.write( "\nwo:timePrecisionBefore\ta\to:DatatypeProperty ." ) # currently unused
 		self.output.write( "\nwo:preferredCalendar\ta\to:ObjectProperty ." )
 		# Other external properties that have a clear declaration:
 		# (we omit the rdfs and skos properties, which lack a clear typing)
@@ -77,23 +77,24 @@ class EPTurtleFile(entityprocessor.EntityProcessor):
 		self.__writeLanguageLiteralValues('so:description', data['description'])
 		self.__writeLanguageLiteralValues('sk:altLabel', data['aliases'], True)
 
-		# Connect claims to item:
-		curProperty = ''
-		for claim in data['claims']:
-			i = claim['g'].index('$') + 1
-			claim['localname'] = title + 'S' + claim['g'][i:]
-			if curProperty is claim['m'][1]:
-				self.output.write( ",w:" + claim['localname'])
-			else:
-				curProperty = claim['m'][1]
-				self.output.write( " ;\n\tw:P" + str(curProperty) + "s\tw:" + claim['localname'])
+		# Connect statements to item:
+		if self.dataFilter.includeStatements():
+			curProperty = ''
+			for statement in data['claims']:
+				i = statement['g'].index('$') + 1
+				statement['localname'] = title + 'S' + statement['g'][i:]
+				if curProperty is statement['m'][1]:
+					self.output.write( ",w:" + statement['localname'])
+				else:
+					curProperty = statement['m'][1]
+					self.output.write( " ;\n\tw:P" + str(curProperty) + "s\tw:" + statement['localname'])
 
 		self.output.write(" .\n")
 
-		# Export claims:
-		if 'claims' in data:
-			for claim in data['claims']:
-				self.__writeClaimData(claim)
+		# Export statements:
+		if self.dataFilter.includeStatements():
+			for statement in data['claims']:
+				self.__writeStatementData(statement)
 
 		# Export collected references:
 		for key in self.refs.keys():
@@ -127,11 +128,15 @@ class EPTurtleFile(entityprocessor.EntityProcessor):
 		self.__writePropertyDeclarations()
 
 	def logReport(self):
-		logging.log('     * Turtler serialization: ' + str(self.entityCount) + ' entities, definitions for ' + str(self.propertyCount) + ' properties (looked up ' + str(self.propertyLookupCount) + ' types online).')
+		logging.log('     * Turtle serialization: ' + str(self.entityCount) + ' entities, definitions for ' + str(self.propertyCount) + ' properties (looked up ' + str(self.propertyLookupCount) + ' types online).')
 		## Uncomment to dump collected types to update the cache at the end of this file:
 		#for key in sorted(self.propertyTypes.keys()):
 			#logging.logMore( "'" + key + "' : '" + self.propertyTypes[key] + "', " )
 		#logging.log( '}' )
+
+	def close(self):
+		self.output.write("\n\n ### Export completed successfully. The End. ###")
+		self.output.close()
 
 	# Transform a string object that contains \uxxxx etc. into
 	# a sequence of UTF-8 bytes
@@ -206,7 +211,7 @@ class EPTurtleFile(entityprocessor.EntityProcessor):
 
 	# Encode integer literals for use in Turtle.
 	def __encodeIntegerLiteral(self,number):
-		return '"' + str(int(number)) + '"^^xsd:integer'
+		return '"' + str(int(number)) + '"^^xsd:int'
 
 	# Encode time literals for use in Turtle.
 	# The XSD type that is chosen depends on the literal's precision.
@@ -262,17 +267,17 @@ class EPTurtleFile(entityprocessor.EntityProcessor):
 			else:
 				self.output.write( self.__encodeStringLiteral(literals[lang], lang) )
 
-	# Write the data for one claim.
-	def __writeClaimData(self,claim):
-		self.valuesGC = {} # collect coordinates values and export them after each claim
-		self.valuesTI = {} # collect time values and export them after each claim
+	# Write the data for one statement.
+	def __writeStatementData(self,statement):
+		self.valuesGC = {} # collect coordinates values and export them after each statement
+		self.valuesTI = {} # collect time values and export them after each statement
 
-		self.output.write( '\nw:' + claim['localname'] + "\n\ta\two:Statement" )
-		self.__writeSnakData("w:P" + str(claim['m'][1]) + 'v', claim['m'])
-		for q in claim['q']:
+		self.output.write( '\nw:' + statement['localname'] + "\n\ta\two:Statement" )
+		self.__writeSnakData("w:P" + str(statement['m'][1]) + 'v', statement['m'])
+		for q in statement['q']:
 			self.__writeSnakData("w:P" + str(q[1]) + 'q', q)
 
-		for ref in claim['refs']:
+		for ref in statement['refs']:
 			key = "R" + self.__getHashForLocalName(ref)
 			self.refs[key] = ref
 			self.output.write( " ;\n\tpv:wasDerivedFrom\tw:" + key )
@@ -288,8 +293,9 @@ class EPTurtleFile(entityprocessor.EntityProcessor):
 			self.output.write( '\nw:' + key + "\n\ta\two:TimeValue" )
 			self.output.write( " ;\n\two:time\t" + self.__encodeTimeLiteral(value['time'],value['precision']) )
 			self.output.write( " ;\n\two:timePrecision\t" + self.__encodeIntegerLiteral(value['precision']) )
-			self.output.write( " ;\n\two:timePrecisionBefore\t" + self.__encodeIntegerLiteral(value['before']) )
-			self.output.write( " ;\n\two:timePrecisionAfter\t" + self.__encodeIntegerLiteral(value['after']) )
+			## Currently unused -- do not export yet.
+			#self.output.write( " ;\n\two:timePrecisionBefore\t" + self.__encodeIntegerLiteral(value['before']) )
+			#self.output.write( " ;\n\two:timePrecisionAfter\t" + self.__encodeIntegerLiteral(value['after']) )
 			self.output.write( " ;\n\two:preferredCalendar\tw:" + value['calendarmodel'][35:] )
 			self.output.write(" .\n")
 

@@ -8,6 +8,7 @@ class EntityDataFilter:
 	def __init__(self):
 		self.includeLanguages = True
 		self.includeSites = True
+		self.includeStats = True
 
 	# Set a language filter, given as a list of
 	# language codes (possibly empty), or True
@@ -30,6 +31,10 @@ class EntityDataFilter:
 			for siteId in siteIds:
 				self.includeSites[siteId] = True
 
+	# Set whether statements should be included in export (bool).
+	def setIncludeStatements(self,includeStats):
+		self.includeStats = includeStats
+
 	# Should the given language be included?
 	def includeLanguage(self,langCode):
 		if self.includeLanguages == True:
@@ -43,3 +48,7 @@ class EntityDataFilter:
 			return True
 		else:
 			return siteId in self.includeSites
+
+	# Should statements be included?
+	def includeStatements(self):
+		return self.includeStats

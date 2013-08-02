@@ -56,6 +56,10 @@ class EPKbFile(entityprocessor.EntityProcessor):
 	def logReport(self):
 		logging.log('     * Serialized ' + str(self.entityCount) + ' entities using the KB format.')
 
+	def close(self):
+		#self.output.write("\n\n ### Export completed successfully. The End. ###")
+		self.output.close()
+
 	def __snakToText(self,snak) :
 		if snak[0] == 'value' :
 			if snak[2] == 'wikibase-entityid' :

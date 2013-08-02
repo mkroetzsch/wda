@@ -45,3 +45,8 @@ class RPLatest(revisionprocessor.RevisionProcessor):
 		logging.log('     * Number of latest revisions found: ' + str(self.curRevsFound))
 		for ep in self.eps:
 			ep.logReport()
+
+	# Close/finish any export files
+	def close(self):
+		for ep in self.eps:
+			ep.close()
