@@ -31,6 +31,9 @@ parser.add_argument('-l', '--lang', nargs='+', type=str, default=True,\
 		help='restrict exported labels etc. to specified language codes (default: no extra restriction)')
 parser.add_argument('-s', '--sites', metavar='ID', nargs='+', type=str, default=True,\
 		help='restrict exported links to specified site ids (default: no extra restriction)')
+parser.add_argument('--no-refs', dest='includeRefs', action='store_const',\
+		const=False, default=True,\
+		help='omit references in statements (default: include them)')
 
 args = parser.parse_args()
 
@@ -56,34 +59,41 @@ rplatest = includes.rplatest.RPLatest(ph) # process latest revisions of all enti
 dp.registerProcessor(rplatest)
 
 for ef in args.export:
+
+	dataFilter = includes.entityDataFilter.EntityDataFilter()
+	dataFilter.setIncludeLanguages(args.lang)
+	dataFilter.setIncludeSites(args.sites)
+	dataFilter.setIncludeReferences(args.includeRefs)
+	extraName = ''
+
 	if ef == 'turtle':
-		dataFilter = includes.entityDataFilter.EntityDataFilter()
-		dataFilter.setIncludeLanguages(args.lang)
-		dataFilter.setIncludeSites(args.sites)
-		turtleFile = gzip.open('results/turtle-' + curdate + '.txt.gz', 'w')
+		if args.lang != True or args.sites != True or args.includeRefs == False:
+			extraName = '-' + dataFilter.getHashCode()
+		turtleFile = gzip.open('results/turtle-' + curdate + extraName + '.ttl.gz', 'w')
 		epTurtle = includes.epTurtleFileWriter.EPTurtleFile(turtleFile,dataFilter)
 		rplatest.registerEntityProcessor(epTurtle)
 	elif ef == 'turtle-stats':
-		dataFilter = includes.entityDataFilter.EntityDataFilter()
 		dataFilter.setIncludeLanguages([])
 		dataFilter.setIncludeSites([])
-		turtleStatsFile = gzip.open('results/turtle-' + curdate + '-statements.txt.gz', 'w')
+		if args.includeRefs == False:
+			extraName = '-' + dataFilter.getHashCode()
+		turtleFile = gzip.open('results/turtle-' + curdate + extraName + '-statements.ttl.gz', 'w')
 		epTurtle = includes.epTurtleFileWriter.EPTurtleFile(turtleFile,dataFilter)
 		rplatest.registerEntityProcessor(epTurtle)
 	elif ef == 'turtle-links':
-		dataFilter = includes.entityDataFilter.EntityDataFilter()
 		dataFilter.setIncludeLanguages([])
-		dataFilter.setIncludeSites(args.sites)
 		dataFilter.setIncludeStatements(False)
-		turtleFile = gzip.open('results/turtle-' + curdate + '-links.txt.gz', 'w')
+		if args.sites != True:
+			extraName = '-' + dataFilter.getHashCode()
+		turtleFile = gzip.open('results/turtle-' + curdate + extraName + '-links.ttl.gz', 'w')
 		epTurtle = includes.epTurtleFileWriter.EPTurtleFile(turtleFile,dataFilter)
 		rplatest.registerEntityProcessor(epTurtle)
 	elif ef == 'turtle-labels':
-		dataFilter = includes.entityDataFilter.EntityDataFilter()
-		dataFilter.setIncludeLanguages(args.lang)
 		dataFilter.setIncludeSites([])
 		dataFilter.setIncludeStatements(False)
-		turtleFile = gzip.open('results/turtle-' + curdate + '-labels.txt.gz', 'w')
+		if args.lang != True:
+			extraName = '-' + dataFilter.getHashCode()
+		turtleFile = gzip.open('results/turtle-' + curdate + extraName + '-labels.ttl.gz', 'w')
 		epTurtle = includes.epTurtleFileWriter.EPTurtleFile(turtleFile,dataFilter)
 		rplatest.registerEntityProcessor(epTurtle)
 	elif ef == 'kb':
@@ -93,14 +103,6 @@ for ef in args.export:
 		rplatest.registerEntityProcessor(epKb)
 	else:
 		logging.log('*** Warning: unsupported export format "' + ef + '"')
-
-#dataFilter = includes.entityDataFilter.EntityDataFilter()
-#dataFilter.setIncludeLanguages(['en','de','fr'])
-#dataFilter.setIncludeSites(['enwiki','dewiki','enwikivoyage','zhwiki','fawiki'])
-
-#turtleFile = gzip.open('results/turtle-' + curdate + '.txt.gz', 'w')
-#epTurtle = includes.epTurtleFileWriter.EPTurtleFile(turtleFile,dataFilter)
-#rplatest.registerEntityProcessor(epTurtle)
 
 #rpedcount = rpedit.RPEditCount(ph) # Count edits by day and edits by user
 #dp.registerProcessor(rpedcount)
