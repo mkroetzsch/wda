@@ -34,7 +34,7 @@ class EPTurtleFile(entityprocessor.EntityProcessor):
 		self.output.write( "\nwo:latitude\ta\to:DatatypeProperty ." )
 		self.output.write( "\nwo:longitude\ta\to:DatatypeProperty ." )
 		self.output.write( "\nwo:altitude\ta\to:DatatypeProperty ." )
-		self.output.write( "\nwo:precision\ta\to:DatatypeProperty ." )
+		self.output.write( "\nwo:gcPrecision\ta\to:DatatypeProperty ." )
 		self.output.write( "\nwo:time\ta\to:DatatypeProperty ." )
 		self.output.write( "\nwo:timePrecision\ta\to:DatatypeProperty ." )
 		#self.output.write( "\nwo:timePrecisionAfter\ta\to:DatatypeProperty ." ) # currently unused
@@ -142,7 +142,11 @@ class EPTurtleFile(entityprocessor.EntityProcessor):
 	# a sequence of UTF-8 bytes
 	# TODO It would be better to accomplish this without eval().
 	def __unicodeStrToBytes(self,string):
-		return eval('u"'+string.replace('"','\\"')+'"').encode('utf-8')
+		try:
+			return eval('u"'+string.replace('\\','\\\\').replace('"','\\"')+'"').encode('utf-8')
+		except SyntaxError as e:
+			logging.log( "*** Error when trying to convert unicode for '" + string + "'" )
+			return ":::RDF-Export-Error:::"
 
 	# Find type information about a property.
 	def __getPropertyType(self,propertyTitle):
@@ -308,7 +312,7 @@ class EPTurtleFile(entityprocessor.EntityProcessor):
 			if value['altitude'] != None:
 				self.output.write( " ;\n\two:altitude\t" + self.__encodeFloatLiteral(value['altitude']) )
 			if value['precision'] != None:
-				self.output.write( " ;\n\two:precision\t" + self.__encodeFloatLiteral(value['precision']) )
+				self.output.write( " ;\n\two:gcPrecision\t" + self.__encodeFloatLiteral(value['precision']) )
 			if value['globe'] != None:
 				self.output.write( " ;\n\two:globe\tw:" + value['globe'][35:] )
 			self.output.write(" .\n")
