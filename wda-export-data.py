@@ -77,7 +77,7 @@ for ef in args.export:
 		dataFilter.setIncludeSites([])
 		if args.includeRefs == False:
 			extraName = '-' + dataFilter.getHashCode()
-		turtleFile = gzip.open('results/turtle-' + curdate + extraName + '-statements.ttl.gz', 'w')
+		turtleFile = gzip.open('results/turtle-' + curdate + '-statements' + extraName + '.ttl.gz', 'w')
 		epTurtle = includes.epTurtleFileWriter.EPTurtleFile(turtleFile,dataFilter)
 		rplatest.registerEntityProcessor(epTurtle)
 	elif ef == 'turtle-links':
@@ -85,7 +85,7 @@ for ef in args.export:
 		dataFilter.setIncludeStatements(False)
 		if args.sites != True:
 			extraName = '-' + dataFilter.getHashCode()
-		turtleFile = gzip.open('results/turtle-' + curdate + extraName + '-links.ttl.gz', 'w')
+		turtleFile = gzip.open('results/turtle-' + curdate + '-links' + extraName + '.ttl.gz', 'w')
 		epTurtle = includes.epTurtleFileWriter.EPTurtleFile(turtleFile,dataFilter)
 		rplatest.registerEntityProcessor(epTurtle)
 	elif ef == 'turtle-labels':
@@ -93,7 +93,7 @@ for ef in args.export:
 		dataFilter.setIncludeStatements(False)
 		if args.lang != True:
 			extraName = '-' + dataFilter.getHashCode()
-		turtleFile = gzip.open('results/turtle-' + curdate + extraName + '-labels.ttl.gz', 'w')
+		turtleFile = gzip.open('results/turtle-' + curdate + '-labels' + extraName + '.ttl.gz', 'w')
 		epTurtle = includes.epTurtleFileWriter.EPTurtleFile(turtleFile,dataFilter)
 		rplatest.registerEntityProcessor(epTurtle)
 	elif ef == 'kb':
