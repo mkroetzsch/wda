@@ -18,9 +18,10 @@ class EPTurtleFile(entityprocessor.EntityProcessor):
 		self.propertyLookupCount = 0
 		self.propertyTypes = {}
 		self.propertyDeclarationQueue = []
+		self.filterName = self.dataFilter.getHashCode()
 
 		self.output.write( '### Wikidata OWL/RDF Turtle dump\n' )
-		self.output.write( '# Filter settings:\n' )
+		self.output.write( '# Filter settings (' + self.filterName + ')\n' )
 		for infostr in self.dataFilter.getFilterSettingsInfo():
 			self.output.write( '# - ' + infostr + '\n' )
 		self.output.write( '# Generated on ' + str(datetime.datetime.now()) + '\n###\n\n' )
@@ -138,7 +139,7 @@ class EPTurtleFile(entityprocessor.EntityProcessor):
 	def logReport(self):
 		## Dump collected types to update the cache at the end of this file (normally done only at the very end):
 		#self.__knownTypesReport()
-		logging.log('     * Turtle serialization: ' + str(self.entityCount) + ' entities, definitions for ' + str(self.propertyCount) + ' properties (looked up ' + str(self.propertyLookupCount) + ' types online).')
+		logging.log('     * Turtle serialization (' + self.filterName + '): ' + str(self.entityCount) + ' entities, definitions for ' + str(self.propertyCount) + ' properties (looked up ' + str(self.propertyLookupCount) + ' types online).')
 
 	# Create a report about known property types if any had
 	# to be looked up online.
