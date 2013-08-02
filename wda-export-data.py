@@ -69,7 +69,9 @@ for ef in args.export:
 	if ef == 'turtle':
 		if args.lang != True or args.sites != True or args.includeRefs == False:
 			extraName = '-' + dataFilter.getHashCode()
-		turtleFile = gzip.open('results/turtle-' + curdate + extraName + '.ttl.gz', 'w')
+		filename = 'results/turtle-' + curdate + extraName + '.ttl.gz'
+		logging.log('Exporting Turtle to file ' + filename)
+		turtleFile = gzip.open(filename, 'w')
 		epTurtle = includes.epTurtleFileWriter.EPTurtleFile(turtleFile,dataFilter)
 		rplatest.registerEntityProcessor(epTurtle)
 	elif ef == 'turtle-stats':
@@ -77,7 +79,9 @@ for ef in args.export:
 		dataFilter.setIncludeSites([])
 		if args.includeRefs == False:
 			extraName = '-' + dataFilter.getHashCode()
-		turtleFile = gzip.open('results/turtle-' + curdate + '-statements' + extraName + '.ttl.gz', 'w')
+		filename = 'results/turtle-' + curdate + '-statements' + extraName + '.ttl.gz'
+		logging.log('Exporting Turtle (statements only) to file ' + filename)
+		turtleFile = gzip.open(filename, 'w')
 		epTurtle = includes.epTurtleFileWriter.EPTurtleFile(turtleFile,dataFilter)
 		rplatest.registerEntityProcessor(epTurtle)
 	elif ef == 'turtle-links':
@@ -85,7 +89,9 @@ for ef in args.export:
 		dataFilter.setIncludeStatements(False)
 		if args.sites != True:
 			extraName = '-' + dataFilter.getHashCode()
-		turtleFile = gzip.open('results/turtle-' + curdate + '-links' + extraName + '.ttl.gz', 'w')
+		filename = 'results/turtle-' + curdate + '-links' + extraName + '.ttl.gz'
+		logging.log('Exporting Turtle (links only) to file ' + filename)
+		turtleFile = gzip.open(filename, 'w')
 		epTurtle = includes.epTurtleFileWriter.EPTurtleFile(turtleFile,dataFilter)
 		rplatest.registerEntityProcessor(epTurtle)
 	elif ef == 'turtle-labels':
@@ -93,12 +99,16 @@ for ef in args.export:
 		dataFilter.setIncludeStatements(False)
 		if args.lang != True:
 			extraName = '-' + dataFilter.getHashCode()
-		turtleFile = gzip.open('results/turtle-' + curdate + '-labels' + extraName + '.ttl.gz', 'w')
+		filename = 'results/turtle-' + curdate + '-labels' + extraName + '.ttl.gz'
+		logging.log('Exporting Turtle (labels etc. only) to file ' + filename)
+		turtleFile = gzip.open(filename, 'w')
 		epTurtle = includes.epTurtleFileWriter.EPTurtleFile(turtleFile,dataFilter)
 		rplatest.registerEntityProcessor(epTurtle)
 	elif ef == 'kb':
 		# TODO no support for filtering right now
-		kbFile = gzip.open('results/kb-' + curdate + '.txt.gz', 'w')
+		filename = 'results/kb-' + curdate + '.txt.gz'
+		logging.log('Exporting KB format to file ' + filename)
+		kbFile = gzip.open(filename, 'w')
 		epKb = includes.epKbFileWriter.EPKbFile(kbFile)
 		rplatest.registerEntityProcessor(epKb)
 	else:
