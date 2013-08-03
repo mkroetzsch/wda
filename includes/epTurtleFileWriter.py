@@ -336,14 +336,13 @@ class EPTurtleFile(entityprocessor.EntityProcessor):
 
 	# Write the data for a time datavalue with the given local name.
 	def __writeTimeValue(self,localname,value):
-		# TODO Timezone encoding currently unclear, as the timezone is
-		# stored in two values in current dumps: a separate 'timezone'
-		# field and the datetime stamp ("Z" denotes UTC timezone).
-		# But of course exact times are not supported yet anyway.
+		# TODO Timezone not exported yet. The timezone support should
+		# be similar to calendar model support (all dates are UTC, but
+		# there can be a "preferred timezone for display")
 		self.output.write( '\nw:' + localname + "\n\ta\two:TimeValue" )
 		self.output.write( " ;\n\two:time\t" + self.__encodeTimeLiteral(value['time'],value['precision']) )
 		self.output.write( " ;\n\two:timePrecision\t" + self.__encodeIntegerLiteral(value['precision']) )
-		## Currently unused -- do not export yet.
+		## TODO Currently unused -- do not export yet.
 		#self.output.write( " ;\n\two:timePrecisionBefore\t" + self.__encodeIntegerLiteral(value['before']) )
 		#self.output.write( " ;\n\two:timePrecisionAfter\t" + self.__encodeIntegerLiteral(value['after']) )
 		self.output.write( " ;\n\two:preferredCalendar\tw:" + value['calendarmodel'][35:] )
