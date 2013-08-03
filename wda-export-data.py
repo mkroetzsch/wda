@@ -31,6 +31,8 @@ parser.add_argument('-l', '--lang', nargs='+', type=str, default=True,\
 		help='restrict exported labels etc. to specified language codes (default: no extra restriction)')
 parser.add_argument('-s', '--sites', metavar='ID', nargs='+', type=str, default=True,\
 		help='restrict exported links to specified site ids (default: no extra restriction)')
+parser.add_argument('--datatypes', metavar='TYPE', nargs='+', type=str, default=True,\
+		help='restrict exported data etc. to properties with the specified Wikidata types (default: no extra restriction)')
 parser.add_argument('--no-refs', dest='includeRefs', action='store_const',\
 		const=False, default=True,\
 		help='omit references in statements (default: include them)')
@@ -64,10 +66,11 @@ for ef in args.export:
 	dataFilter.setIncludeLanguages(args.lang)
 	dataFilter.setIncludeSites(args.sites)
 	dataFilter.setIncludeReferences(args.includeRefs)
+	dataFilter.setIncludePropertyTypes(args.datatypes)
 	extraName = ''
 
 	if ef == 'turtle':
-		if args.lang != True or args.sites != True or args.includeRefs == False:
+		if args.lang != True or args.sites != True or args.datatypes != True or args.includeRefs == False:
 			extraName = '-' + dataFilter.getHashCode()
 		filename = 'results/turtle-' + curdate + extraName + '.ttl.gz'
 		logging.log('Exporting Turtle to file ' + filename)
@@ -77,7 +80,7 @@ for ef in args.export:
 	elif ef == 'turtle-stats':
 		dataFilter.setIncludeLanguages([])
 		dataFilter.setIncludeSites([])
-		if args.includeRefs == False:
+		if args.datatypes != True or args.includeRefs == False:
 			extraName = '-' + dataFilter.getHashCode()
 		filename = 'results/turtle-' + curdate + '-statements' + extraName + '.ttl.gz'
 		logging.log('Exporting Turtle (statements only) to file ' + filename)
