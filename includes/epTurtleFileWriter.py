@@ -129,9 +129,8 @@ class EPTurtleFile(entityprocessor.EntityProcessor):
 				logging.log("*** Warning: the following sitekey was not understood: " + sitekey)
 				continue
 
-			titleBytes = self.__unicodeStrToBytes(data['links'][sitekey])
-			#self.output.write("\n# Title: " + titleBytes )
-			self.output.write( "\n<" + urlPrefix + urllib.quote(titleBytes) + ">\n\ta\tso:Article" )
+			title = data['links'][sitekey].encode('utf-8')
+			self.output.write( "\n<" + urlPrefix + urllib.quote(title) + ">\n\ta\tso:Article" )
 			self.output.write( " ;\n\tso:about\tw:" + title )
 			if sitekey in siteLanguageCodes:
 				self.output.write( " ;\n\tso:inLanguage\t\"" + siteLanguageCodes[sitekey] + "\"")
@@ -169,16 +168,6 @@ class EPTurtleFile(entityprocessor.EntityProcessor):
 		self.output.write("\n\n ### Export completed successfully. The End. ###")
 		self.__knownTypesReport()
 		self.output.close()
-
-	# Transform a string object that contains \uxxxx etc. into
-	# a sequence of UTF-8 bytes
-	# TODO It would be better to accomplish this without eval().
-	def __unicodeStrToBytes(self,string):
-		try:
-			return eval('u"'+string.replace('\\','\\\\').replace('"','\\"')+'"').encode('utf-8')
-		except SyntaxError as e:
-			logging.log( "*** Error when trying to convert unicode for '" + string + "'" )
-			return ":::RDF-Export-Error:::"
 
 	# Find type information about a property.
 	def __getPropertyType(self,propertyTitle):
@@ -246,10 +235,11 @@ class EPTurtleFile(entityprocessor.EntityProcessor):
 	# the given language code is supported, so this must be checked first.
 	# The string is expected to be JSON escaped (as in Wikidata exports).
 	def __encodeStringLiteral(self,string,lang = False):
+		literal = string.replace("\\","\\\\").replace('"','\\"').replace("'","\\'").encode('utf-8')
 		if lang == False:
-			return '"' + string.replace("\\/","/").replace("'","\\'") + '"'
+			return '"' + literal + '"'
 		else:
-			return '"' + string.replace("\\/","/").replace("'","\\'") + '"@' + langCodes[lang]
+			return '"' + literal + '"@' + langCodes[lang]
 
 	# Encode float literals for use in Turtle.
 	def __encodeFloatLiteral(self,number):
@@ -409,7 +399,7 @@ class EPTurtleFile(entityprocessor.EntityProcessor):
 					self.output.write( " ;\n\t" + prop + "\tw:Q" + str(snak[3]['numeric-id']) )
 				elif snak[2] == 'string':
 					if datatype == 'commonsMedia':
-						self.output.write( " ;\n\t" + prop + "\t<http://commons.wikimedia.org/wiki/File:" +  urllib.quote(self.__unicodeStrToBytes(snak[3].replace(' ','_'))) + '>' )
+						self.output.write( " ;\n\t" + prop + "\t<http://commons.wikimedia.org/wiki/File:" +  urllib.quote(snak[3].replace(' ','_').encode('utf-8')) + '>' )
 					else:
 						self.output.write( " ;\n\t" + prop + "\t" + self.__encodeStringLiteral(snak[3]) )
 				elif snak[2] == 'time' :

@@ -20,20 +20,20 @@ class EPKbFile(entityprocessor.EntityProcessor):
 
 		if 'label' in data and len(data['label']) > 0 :
 			for lang in data['label'].keys() :
-				self.output.write(title + ' label {' + lang + ':' + data['label'][lang] + "} .\n")
+				self.output.write(title + ' label {' + lang.encode('utf-8') + ':' + data['label'][lang].encode('utf-8') + "} .\n")
 
 		if 'description' in data and len(data['description']) > 0 :
 			for lang in data['description'].keys() :
-				self.output.write(title + ' description {' + lang + ':' + data['description'][lang] + "} .\n")
+				self.output.write(title + ' description {' + lang.encode('utf-8') + ':' + data['description'][lang].encode('utf-8') + "} .\n")
 
 		if 'links' in data and len(data['links']) > 0 :
 			for lang in data['links'].keys() :
-				self.output.write(title + ' link {' + lang + ':' + data['links'][lang] + "} .\n")
+				self.output.write(title + ' link {' + lang.encode('utf-8') + ':' + data['links'][lang].encode('utf-8') + "} .\n")
 
 		if 'aliases' in data and len(data['aliases']) > 0 :
 			for lang in data['aliases'].keys() :
 				for alias in data['aliases'][lang] :
-					self.output.write(title + ' alias {' + lang + ':' + alias + "} .\n")
+					self.output.write(title + ' alias {' + lang.encode('utf-8') + ':' + alias.encode('utf-8') + "} .\n")
 
 		if 'claims' in data and len(data['claims']) > 0 :
 			for claim in data['claims'] :
@@ -65,7 +65,7 @@ class EPKbFile(entityprocessor.EntityProcessor):
 			if snak[2] == 'wikibase-entityid' :
 				return 'P' + str(snak[1]) + ' Q' + str(snak[3]['numeric-id'])
 			elif snak[2] == 'string' :
-				return 'P' + str(snak[1]) + ' {' + snak[3] + '}'
+				return 'P' + str(snak[1]) + ' {' + snak[3].encode('utf-8') + '}'
 			elif snak[2] == 'time' :
 				return 'P' + str(snak[1]) + ' ' + str(snak[3])
 			elif snak[2] == 'globecoordinate' :

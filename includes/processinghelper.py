@@ -1,6 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+import json
+
 # Helper class to parse dump data, including some very simple caches for better reuse
 class ProcessingHelper:
 
@@ -14,8 +16,9 @@ class ProcessingHelper:
 
 	def getVal(self, rev, rawContent):
 		if rev != self.valRev:
-			null = None # interpret "null" in JSON output as None
-			self.val = eval(rawContent.replace('&quot;', '"'))
+			#null = None # interpret "null" in JSON output as None
+			#self.val = eval(rawContent.replace('&quot;', '"'))
+			self.val = json.loads(rawContent.replace('&quot;', '"'))
 			if 'claims' not in self.val: # make sure this is always set
 				self.val['claims'] = []
 			if 'description' not in self.val or not self.val['description']: # make sure this is always set and a dictionary
