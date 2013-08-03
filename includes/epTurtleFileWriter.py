@@ -244,8 +244,12 @@ class EPTurtleFile(entityprocessor.EntityProcessor):
 
 	# Encode string literals for use in Turtle. It is assumed that
 	# the given language code is supported, so this must be checked first.
-	def __encodeStringLiteral(self,string,lang):
-		return '"' + string + '"@' + langCodes[lang]
+	# The string is expected to be JSON escaped (as in Wikidata exports).
+	def __encodeStringLiteral(self,string,lang = False):
+		if lang == False:
+			return '"' + string.replace("\\/","/").replace("'","\\'") + '"'
+		else:
+			return '"' + string.replace("\\/","/").replace("'","\\'") + '"@' + langCodes[lang]
 
 	# Encode float literals for use in Turtle.
 	def __encodeFloatLiteral(self,number):
@@ -299,6 +303,8 @@ class EPTurtleFile(entityprocessor.EntityProcessor):
 		first = True
 		for lang in literals.keys():
 			if lang not in langCodes or not self.dataFilter.includeLanguage(lang):
+				continue
+			if valueList and literals[lang] == []: # deal with https://bugzilla.wikimedia.org/show_bug.cgi?id=44717
 				continue
 			if first:
 				self.output.write( " ;\n\t" + prop + "\t")
@@ -405,7 +411,7 @@ class EPTurtleFile(entityprocessor.EntityProcessor):
 					if datatype == 'commonsMedia':
 						self.output.write( " ;\n\t" + prop + "\t<http://commons.wikimedia.org/wiki/File:" +  urllib.quote(self.__unicodeStrToBytes(snak[3].replace(' ','_'))) + '>' )
 					else:
-						self.output.write( " ;\n\t" + prop + "\t\"" + snak[3] + '"' )
+						self.output.write( " ;\n\t" + prop + "\t" + self.__encodeStringLiteral(snak[3]) )
 				elif snak[2] == 'time' :
 					key = 'VT' + self.__getHashForLocalName(snak[3])
 					self.valuesTI[key] = snak[3]
