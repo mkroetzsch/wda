@@ -243,15 +243,15 @@ class EPTurtleFile(entityprocessor.EntityProcessor):
 
 	# Encode float literals for use in Turtle.
 	def __encodeFloatLiteral(self,number):
-		return '"' + str(number) + '"^^xsd:float'
+		return '"' + str(number) + '"^^x:float'
 
 	# Encode integer literals for use in Turtle.
 	def __encodeIntegerLiteral(self,number):
 		try:
-			return '"' + str(int(number)) + '"^^xsd:int'
+			return '"' + str(int(number)) + '"^^x:int'
 		except ValueError: # let's be prepared for non-numerical strings here
 			logging.log("*** Warning: unexpected number format '" + str(number) + "'.")
-			return '"+42"^^xsd:int' # valid but not canonical = easy to find in file
+			return '"+42"^^x:int' # valid but not canonical = easy to find in file
 
 	# Encode time literals for use in Turtle.
 	# The XSD type that is chosen depends on the literal's precision.
@@ -265,7 +265,7 @@ class EPTurtleFile(entityprocessor.EntityProcessor):
 			day = wikidataTime[16:18]
 		except ValueError: # some rare values seem to have other year lengths
 			logging.log("*** Warning: unexpected date format '" + wikidataTime + "'.")
-			return '"' + wikidataTime + '"^^xsd:dateTime' # let's hope this works
+			return '"' + wikidataTime + '"^^x:dateTime' # let's hope this works
 
 		# Wikidata encodes the year 1BCE as 0000, while XML Schema, even in
 		# version 2, does not allow 0000 and interprets -0001 as 1BCE. Thus
@@ -279,14 +279,14 @@ class EPTurtleFile(entityprocessor.EntityProcessor):
 			year = '{0:05d}'.format(yearnum)
 
 		if precision == 11:
-			return '"' + year + '-' + month + '-' + day + '"^^xsd:date'
+			return '"' + year + '-' + month + '-' + day + '"^^x:date'
 		elif precision == 10:
-			return '"' + year + '-' + month + '"^^xsd:gYearMonth'
+			return '"' + year + '-' + month + '"^^x:gYearMonth'
 		elif precision <= 9:
-			return '"' + year + '"^^xsd:gYear'
+			return '"' + year + '"^^x:gYear'
 		else:
 			logging.log("*** Warning: unexpected precision " + str(precision) + " for date " + wikidataTime + '.')
-			return '"' + wikidataTime + '"^^xsd:dateTime'
+			return '"' + wikidataTime + '"^^x:dateTime'
 
 	# Write a list of language literal values for a given property.
 	def __writeLanguageLiteralValues(self,prop,literals,valueList=False):
@@ -447,7 +447,7 @@ class EPTurtleFile(entityprocessor.EntityProcessor):
 # is an ObjectProperty (rather than a DatatypeProperty).
 owlPropertyRanges = {
 	'wikibase-item': 'o:Thing',
-	'string': 'xsd:string',
+	'string': 'x:string',
 	'time': 'o:Thing',
 	'globe-coordinate': 'o:Thing',
 	'commonsMedia': 'o:Thing',
