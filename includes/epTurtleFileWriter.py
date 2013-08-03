@@ -142,7 +142,7 @@ class EPTurtleFile(entityprocessor.EntityProcessor):
 
 	def logReport(self):
 		## Dump collected types to update the cache at the end of this file (normally done only at the very end):
-		self.__knownTypesReport()
+		#self.__knownTypesReport()
 		logging.log('     * Turtle serialization (' + self.filterName + '): ' + str(self.entityCount) + ' entities, definitions for ' + str(self.propertyCount) + ' properties (looked up ' + str(self.propertyLookupCount) + ' types online).')
 
 	# Create a report about known property types if any had
