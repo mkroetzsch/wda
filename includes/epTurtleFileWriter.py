@@ -129,8 +129,8 @@ class EPTurtleFile(entityprocessor.EntityProcessor):
 				logging.log("*** Warning: the following sitekey was not understood: " + sitekey)
 				continue
 
-			title = data['links'][sitekey].encode('utf-8')
-			self.output.write( "\n<" + urlPrefix + urllib.quote(title) + ">\n\ta\tso:Article" )
+			articletitle = data['links'][sitekey].encode('utf-8')
+			self.output.write( "\n<" + urlPrefix + urllib.quote(articletitle) + ">\n\ta\tso:Article" )
 			self.output.write( " ;\n\tso:about\tw:" + title )
 			if sitekey in siteLanguageCodes:
 				self.output.write( " ;\n\tso:inLanguage\t\"" + siteLanguageCodes[sitekey] + "\"")
