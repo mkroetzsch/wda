@@ -96,7 +96,7 @@ class EPTurtleFile(entityprocessor.EntityProcessor):
 				statements.append(statement)
 				i = statement['g'].index('$') + 1
 				statement['localname'] = title + 'S' + statement['g'][i:]
-				if curProperty is statement['m'][1]:
+				if curProperty == statement['m'][1]:
 					self.output.write( ",w:" + statement['localname'])
 				else:
 					curProperty = statement['m'][1]
