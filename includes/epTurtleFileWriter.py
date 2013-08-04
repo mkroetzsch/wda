@@ -645,7 +645,7 @@ langCodes = {
 	'ltg': 'ltg',
 	'lt': 'lt',
 	'lv': 'lv',
-	'lzh': 'lzh',
+	'lzh': 'lzh', # Literary Chinese
 	'map-bms': 'map-bms', # TODO probably no correct code; should be Basa Banyumasan
 	'mdf': 'mdf',
 	'mg': 'mg',
@@ -787,7 +787,7 @@ langCodes = {
 	'xmf': 'xmf',
 	'yi': 'yi',
 	'yo': 'yo',
-	'yue': 'yue',
+	'yue': 'yue', # Cantonese
 	'za': 'za',
 	'zea': 'zea',
 	'zh-classical': 'lzh', # TODO might be redundant
