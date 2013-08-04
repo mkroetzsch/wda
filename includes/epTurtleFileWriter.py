@@ -677,7 +677,7 @@ langCodes = {
 	#'nl-informal': 'nl-informal',
 	'nl': 'nl',
 	'nn': 'nn',
-	'no': 'nb', # TODO might be redundant (Norwegian Bokmål)
+	'no': 'no', # TODO possibly this is "nb" (Norwegian Bokmål); but current dumps have different values for "nb" and "no" in some cases
 	'nov': 'nov',
 	'nrm': 'nrm',
 	'nso': 'nso',
