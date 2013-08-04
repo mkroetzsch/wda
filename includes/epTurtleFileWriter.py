@@ -213,7 +213,7 @@ class EPTurtleFile(entityprocessor.EntityProcessor):
 				propertyType = self.__fetchPropertyType(propertyTitle)
 			self.propertyTypes[propertyTitle] = propertyType
 			self.propertyDeclarationQueue.append(propertyTitle)
-		return propertyType
+		return self.propertyTypes[propertyTitle]
 
 	def __writePropertyDeclarations(self):
 		for propertyTitle in self.propertyDeclarationQueue:
@@ -379,7 +379,7 @@ class EPTurtleFile(entityprocessor.EntityProcessor):
 		if value['precision'] != None:
 			self.output.write( " ;\n\two:gcPrecision\t" + self.__encodeFloatLiteral(value['precision']) )
 		if value['globe'] != None:
-			self.output.write( " ;\n\two:globe\tw:" + value['globe'][35:] )
+			self.output.write( " ;\n\two:globe\tw:" + value['globe'][31:] )
 		self.output.write(" .\n")
 
 	# Write the data for one snak. Since we use different variants of
@@ -395,18 +395,17 @@ class EPTurtleFile(entityprocessor.EntityProcessor):
 				datatype = None
 
 			if self.dataFilter.includePropertyType(datatype):
-				if snak[2] == 'wikibase-entityid':
+				if datatype == 'wikibase-item':
 					self.output.write( " ;\n\t" + prop + "\tw:Q" + str(snak[3]['numeric-id']) )
-				elif snak[2] == 'string':
-					if datatype == 'commonsMedia':
-						self.output.write( " ;\n\t" + prop + "\t<http://commons.wikimedia.org/wiki/File:" +  urllib.quote(snak[3].replace(' ','_').encode('utf-8')) + '>' )
-					else:
-						self.output.write( " ;\n\t" + prop + "\t" + self.__encodeStringLiteral(snak[3]) )
-				elif snak[2] == 'time' :
+				elif datatype == 'commonsMedia':
+					self.output.write( " ;\n\t" + prop + "\t<http://commons.wikimedia.org/wiki/File:" +  urllib.quote(snak[3].replace(' ','_').encode('utf-8')) + '>' )
+				elif datatype == 'string':
+					self.output.write( " ;\n\t" + prop + "\t" + self.__encodeStringLiteral(snak[3]) )
+				elif datatype == 'time' :
 					key = 'VT' + self.__getHashForLocalName(snak[3])
 					self.valuesTI[key] = snak[3]
 					self.output.write( " ;\n\t" + prop + "\tw:" + key )
-				elif snak[2] == 'globecoordinate' :
+				elif datatype == 'globe-coordinate' :
 					key = 'VC' + self.__getHashForLocalName(snak[3])
 					self.valuesGC[key] = snak[3]
 					self.output.write( " ;\n\t" + prop + "\tw:" + key )
