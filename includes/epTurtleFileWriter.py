@@ -467,8 +467,10 @@ datatypesByValueTypes = {
 # The meaning of Wikimedia language codes in terms of
 # BCP 47 http://www.rfc-editor.org/rfc/bcp/bcp47.txt.
 # So far, this is mostly identity; needs careful revision.
+# All official IANA codes are at
+# http://www.iana.org/assignments/language-subtag-registry/language-subtag-registry
 langCodes = {
-	'ab': 'ab',
+	'ab': 'ab', # Abkhazian
 	'ace': 'ace',
 	'af': 'af',
 	'ak': 'ak',
@@ -488,11 +490,11 @@ langCodes = {
 	'az': 'az',
 	'ba': 'ba',
 	'bar': 'bar',
-	'bat-smg': 'bat-smg',
+	'bat-smg': 'sgs', #TODO might be redundant (Samogitian)
 	'bcl': 'bcl',
 	'be': 'be',
-	'be-tarask': 'be-tarask',
-	'be-x-old': 'be-x-old',
+	'be-tarask': 'be-tarask', # Belarusian in Taraskievica orthography
+	'be-x-old': 'be-tarask', #TODO might be redundant
 	'bg': 'bg',
 	'bh': 'bh',
 	'bi': 'bi',
@@ -506,7 +508,7 @@ langCodes = {
 	'bug': 'bug',
 	'bxr': 'bxr',
 	'ca': 'ca',
-	'cbk-zam': 'cbk-zam',
+	'cbk-zam': 'cbk-zam', # Chavacano? TODO probably no correct code
 	'cdo': 'cdo',
 	'ceb': 'ceb',
 	'ce': 'ce',
@@ -516,17 +518,17 @@ langCodes = {
 	'ckb': 'ckb',
 	'co': 'co',
 	'cr': 'cr',
-	'crh': 'crh',
-	'crh-latn': 'crh-latn',
+	'crh': 'crh-Latn', #TODO might be redundant
+	'crh-latn': 'crh-Latn', # Crimean Tatar/Crimean Turkish; script Latin
 	'csb': 'csb',
 	'cs': 'cs',
 	'cu': 'cu',
 	'cv': 'cv',
 	'cy': 'cy',
 	'da': 'da',
-	'de-at': 'de-at',
-	'de-ch': 'de-ch',
-	'de': 'de',
+	'de-at': 'de-AT', # German, Austria
+	'de-ch': 'de-CH', # German, Switzerland
+	'de': 'de', # German
 	#'de-formal': 'de-formal',
 	'diq': 'diq',
 	'dsb': 'dsb',
@@ -536,9 +538,9 @@ langCodes = {
 	'egl': 'egl',
 	'el': 'el',
 	'eml': 'eml',
-	'en-ca': 'en-ca',
-	'en': 'en',
-	'en-gb': 'en-gb',
+	'en-ca': 'en-CA', # English; Canada
+	'en': 'en', # English
+	'en-gb': 'en-GB', # English; Great Britain
 	'eo': 'eo',
 	'es': 'es',
 	'et': 'et',
@@ -547,7 +549,7 @@ langCodes = {
 	'fa': 'fa',
 	'ff': 'ff',
 	'fi': 'fi',
-	'fiu-vro': 'fiu-vro',
+	'fiu-vro': 'vro', #TODO might be redundant
 	'fj': 'fj',
 	'fo': 'fo',
 	'frc': 'frc',
@@ -559,8 +561,8 @@ langCodes = {
 	'ga': 'ga',
 	'gag': 'gag',
 	'gan': 'gan',
-	'gan-hans': 'gan-hans',
-	'gan-hant': 'gan-hant',
+	'gan-hans': 'gan-Hans', # Gan Chinese; script Han (simplified)
+	'gan-hant': 'gan-Hant', # Gan Chinese; script Han (traditional)
 	'gd': 'gd',
 	'gl': 'gl',
 	'glk': 'glk',
@@ -585,8 +587,8 @@ langCodes = {
 	'id': 'id',
 	'ie': 'ie',
 	'ig': 'ig',
-	'ike-cans': 'ike-cans',
-	'ike-latn': 'ike-latn',
+	'ike-cans': 'ike-Cans', # Eastern Canadian Inuktitut, Unified Canadian Aboriginal Syllabics script
+	'ike-latn': 'ike-Latn', # Eastern Canadian Inuktitut, Latin script
 	'ik': 'ik',
 	'ilo': 'ilo',
 	'io': 'io',
@@ -605,13 +607,13 @@ langCodes = {
 	'kg': 'kg',
 	'ki': 'ki',
 	'kiu': 'kiu',
-	'kk-arab': 'kk-arab',
-	'kk-cn': 'kk-cn',
-	'kk-cyrl': 'kk-cyrl',
-	'kk': 'kk',
-	'kk-kz': 'kk-kz',
-	'kk-latn': 'kk-latn',
-	'kk-tr': 'kk-tr',
+	'kk-arab': 'kk-Arab',# Kazakh; script Arabic
+	'kk-cn': 'kk-CN', # Kazakh; PR China
+	'kk-cyrl': 'kk-Cyrl', # Kazakh; script Cyrillic; TODO IANA has kk with Suppress-Script: Cyrl, so it should be the same as kk
+	'kk': 'kk', # Kazakh
+	'kk-kz': 'kk-KZ', # Kazakh; Kazakhstan
+	'kk-latn': 'kk-Latn', # Kazakh; script Latin
+	'kk-tr': 'kk-TR', # Kazakh; Turkey
 	'kl': 'kl',
 	'km': 'km',
 	'kn': 'kn',
@@ -621,9 +623,9 @@ langCodes = {
 	'krj': 'krj',
 	'ksh': 'ksh',
 	'ks': 'ks',
-	'ku-arab': 'ku-arab',
-	'ku': 'ku',
-	'ku-latn': 'ku-latn',
+	'ku-arab': 'ku-Arab', # Kurdish; script Arabic
+	'ku': 'ku', # Kurdish; TODO this is a macrolanguage; anything more specific? TODO all uses seem to be in Latin -- should this be ku-Latn then?
+	'ku-latn': 'ku-Latn', # Kurdish; script Latin
 	'kv': 'kv',
 	'kw': 'kw',
 	'ky': 'ky',
@@ -644,7 +646,7 @@ langCodes = {
 	'lt': 'lt',
 	'lv': 'lv',
 	'lzh': 'lzh',
-	'map-bms': 'map-bms',
+	'map-bms': 'map-bms', # TODO probably no correct code; should be Basa Banyumasan
 	'mdf': 'mdf',
 	'mg': 'mg',
 	'mhr': 'mhr',
@@ -667,15 +669,15 @@ langCodes = {
 	'nan': 'nan',
 	'nap': 'nap',
 	'nb': 'nb',
-	'nds': 'nds',
-	'nds-nl': 'nds-nl',
+	'nds': 'nds', # Low German
+	'nds-nl': 'nds-NL', # Low German, Netherlands
 	'ne': 'ne',
 	'new': 'new',
 	'ng': 'ng',
 	#'nl-informal': 'nl-informal',
 	'nl': 'nl',
 	'nn': 'nn',
-	'no': 'no',
+	'no': 'nb', # TODO might be redundant (Norwegian Bokmål)
 	'nov': 'nov',
 	'nrm': 'nrm',
 	'nso': 'nso',
@@ -699,14 +701,14 @@ langCodes = {
 	'pnb': 'pnb',
 	'pnt': 'pnt',
 	'ps': 'ps',
-	'pt-br': 'pt-br',
-	'pt': 'pt',
+	'pt-br': 'pt-BR', # Portuguese, Brazil
+	'pt': 'pt', # Portuguese
 	'qu': 'qu',
 	'rm': 'rm',
 	'rmy': 'rmy',
 	'rn': 'rn',
-	'roa-rup': 'roa-rup',
-	'roa-tara': 'roa-tara',
+	'roa-rup': 'rup', # TODO might be redundant
+	'roa-tara': 'roa-tara', # TODO probably no correct code
 	'ro': 'ro',
 	'rue': 'rue',
 	'rup': 'rup',
@@ -732,10 +734,10 @@ langCodes = {
 	'sn': 'sn',
 	'so': 'so',
 	'sq': 'sq',
-	'sr-ec': 'sr-ec',
-	'sr-el': 'sr-el',
+	'sr-ec': 'sr-ec', # Serbian TODO incorrect code (unless it means Serbian from Ecuador ;-)
+	'sr-el': 'sr-el', # Serbian? TODO incorrect code (el undefined)
 	'srn': 'srn',
-	'sr': 'sr',
+	'sr': 'sr', # Serbian TODO should probalby be sr-Cyrl
 	'ss': 'ss',
 	'stq': 'stq',
 	'st': 'st',
@@ -746,14 +748,14 @@ langCodes = {
 	'ta': 'ta',
 	'te': 'te',
 	'tet': 'tet',
-	'tg-latn': 'tg-latn',
+	'tg-latn': 'tg-Latn', # Tajik; script Latin
 	'tg': 'tg',
 	'th': 'th',
 	'ti': 'ti',
 	'tk': 'tk',
 	'tl': 'tl',
 	'tn': 'tn',
-	'tokipona': 'tokipona',
+	'tokipona': 'tokipona', # TODO no correct code, not even formally
 	'to': 'to',
 	'tpi': 'tpi',
 	'tr': 'tr',
@@ -788,19 +790,20 @@ langCodes = {
 	'yue': 'yue',
 	'za': 'za',
 	'zea': 'zea',
-	'zh-classical': 'zh-classical',
-	'zh-cn': 'zh-cn',
-	'zh-hans': 'zh-hans',
-	'zh-hant': 'zh-hant',
-	'zh-hk': 'zh-hk',
-	'zh-min-nan': 'zh-min-nan',
-	'zh-mo': 'zh-mo',
-	'zh-my': 'zh-my',
-	'zh-sg': 'zh-sg',
-	'zh-tw': 'zh-tw',
-	'zh-yue': 'zh-yue',
-	'zh': 'zh',
-	'zu': 'zu'}
+	'zh-classical': 'lzh', # TODO might be redundant
+	'zh-cn': 'zh-CN', # Chinese, PRC
+	'zh-hans': 'zh-Hans', # Chinese; script Han (simplified)
+	'zh-hant': 'zh-Hant', # Chinese; script Han (traditional)
+	'zh-hk': 'zh-HK', # Chinese, Hong Kong
+	'zh-min-nan': 'nan', # TODO might be redundant
+	'zh-mo': 'zh-MO', # Chinese, Macao
+	'zh-my': 'zh-MY', # Chinese, Malaysia
+	'zh-sg': 'zh-SG', # Chinese, Singapore
+	'zh-tw': 'zh-TW', # Chinese, Taiwan, Province of China
+	'zh-yue': 'yue', # TODO might be redundant
+	'zh': 'zh', # Chinese; TODO zh is a macrolanguage; should this be cmn? Also, is this the same as zh-Hans or zh-Hant?
+	'zu': 'zu' # Zulu
+}
 
 # The languages used on sites linked from Wikidata in terms of
 # BCP 47 http://www.rfc-editor.org/rfc/bcp/bcp47.txt.
@@ -811,7 +814,7 @@ siteLanguageCodes = {
 	'acewiki' : 'ace',
 	'afwiki' : 'af',
 	'akwiki' : 'ak',
-	'alswiki' : 'als',
+	'alswiki' : 'gsw', # Swiss German (Alsatian)
 	'amwiki' : 'am',
 	'angwiki' : 'ang',
 	'anwiki' : 'an',
@@ -824,10 +827,10 @@ siteLanguageCodes = {
 	'aywiki' : 'ay',
 	'azwiki' : 'az',
 	'barwiki' : 'bar',
-	'bat_smgwiki' : 'bat-smg',
+	'bat_smgwiki' : 'sgs', #Samogitian
 	'bawiki' : 'ba',
 	'bclwiki' : 'bcl',
-	'be_x_oldwiki' : 'be-x-old',
+	'be_x_oldwiki' : 'be-tarask', # Belarusian in Taraskievica orthography
 	'bewiki' : 'be',
 	'bgwiki' : 'bg',
 	'bhwiki' : 'bh',
@@ -842,7 +845,7 @@ siteLanguageCodes = {
 	'bugwiki' : 'bug',
 	'bxrwiki' : 'bxr',
 	'cawiki' : 'ca',
-	'cbk_zamwiki' : 'cbk-zam',
+	'cbk_zamwiki' : 'cbk-zam', # TODO probably no correct code
 	'cdowiki' : 'cdo',
 	'cebwiki' : 'ceb',
 	'cewiki' : 'ce',
@@ -852,7 +855,7 @@ siteLanguageCodes = {
 	'chywiki' : 'chy',
 	'ckbwiki' : 'ckb',
 	'cowiki' : 'co',
-	'crhwiki' : 'crh',
+	'crhwiki' : 'crh-Latn', # Crimean Tatar/Crimean Turkish in Latin script
 	'crwiki' : 'cr',
 	'csbwiki' : 'csb',
 	'cswiki' : 'cs',
@@ -880,7 +883,7 @@ siteLanguageCodes = {
 	'extwiki' : 'ext',
 	'fawiki' : 'fa',
 	'ffwiki' : 'ff',
-	'fiu_vrowiki' : 'fiu-vro',
+	'fiu_vrowiki' : 'vro', # Võro
 	'fiwiki' : 'fi',
 	'fjwiki' : 'fj',
 	'fowiki' : 'fo',
@@ -964,7 +967,7 @@ siteLanguageCodes = {
 	'ltgwiki' : 'ltg',
 	'ltwiki' : 'lt',
 	'lvwiki' : 'lv',
-	'map_bmswiki' : 'map-bms',
+	'map_bmswiki' : 'map-bms', # TODO probably no correct code
 	'mdfwiki' : 'mdf',
 	'mgwiki' : 'mg',
 	'mhrwiki' : 'mhr',
@@ -987,7 +990,7 @@ siteLanguageCodes = {
 	'nahwiki' : 'nah',
 	'napwiki' : 'nap',
 	'nawiki' : 'na',
-	'nds_nlwiki' : 'nds-nl',
+	'nds_nlwiki' : 'nds-nl', # TODO probably no correct code
 	'ndswiki' : 'nds',
 	'newiki' : 'ne',
 	'newwiki' : 'new',
@@ -996,7 +999,7 @@ siteLanguageCodes = {
 	'nlwikivoyage' : 'nl',
 	'nnwiki' : 'nn',
 	'novwiki' : 'nov',
-	'nowiki' : 'no',
+	'nowiki' : 'nb', # Norwegian Bokmål
 	'nrmwiki' : 'nrm',
 	'nsowiki' : 'nso',
 	'nvwiki' : 'nv',
@@ -1026,8 +1029,8 @@ siteLanguageCodes = {
 	'rmwiki' : 'rm',
 	'rmywiki' : 'rmy',
 	'rnwiki' : 'rn',
-	'roa_rupwiki' : 'roa-rup',
-	'roa_tarawiki' : 'roa-tara',
+	'roa_rupwiki' : 'rup', # Macedo-Romanian
+	'roa_tarawiki' : 'roa-tara', # TODO probably no correct code
 	'rowiki' : 'ro',
 	'rowikivoyage' : 'ro',
 	'ruewiki' : 'rue',
@@ -1101,10 +1104,10 @@ siteLanguageCodes = {
 	'yowiki' : 'yo',
 	'zawiki' : 'za',
 	'zeawiki' : 'zea',
-	'zh_classicalwiki' : 'zh-classical',
-	'zh_min_nanwiki' : 'zh-min-nan',
-	'zh_yuewiki' : 'zh-yue',
-	'zhwiki' : 'zh',
+	'zh_classicalwiki' : 'lzh', # Literary Chinese
+	'zh_min_nanwiki' : 'nan', # Min Nan Chinese
+	'zh_yuewiki' : 'yue', # Cantonese
+	'zhwiki' : 'zh', # TODO zh is a macrolanguage; should this be cmn?
 	'zuwiki' : 'zu'
 }
 
