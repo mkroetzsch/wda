@@ -529,7 +529,7 @@ langCodes = {
 	'de-at': 'de-AT', # German, Austria
 	'de-ch': 'de-CH', # German, Switzerland
 	'de': 'de', # German
-	#'de-formal': 'de-formal',
+	'de-formal': 'de-x-formal',  # custom private subtag for formal German
 	'diq': 'diq',
 	'dsb': 'dsb',
 	'dv': 'dv',
@@ -674,7 +674,7 @@ langCodes = {
 	'ne': 'ne',
 	'new': 'new',
 	'ng': 'ng',
-	#'nl-informal': 'nl-informal',
+	'nl-informal': 'nl-x-informal', # custom private subtag for informal Dutch
 	'nl': 'nl',
 	'nn': 'nn',
 	'no': 'no', # TODO possibly this is "nb" (Norwegian Bokmål); but current dumps have different values for "nb" and "no" in some cases
@@ -725,7 +725,7 @@ langCodes = {
 	'sgs': 'sgs',
 	'shi': 'shi',
 	'sh': 'sh',
-	#'simple': 'simple',
+	'simple': 'en-x-simple', # custom private subtag for simple English
 	'si': 'si',
 	'sk': 'sk',
 	'sl': 'sl',
