@@ -541,7 +541,7 @@ langCodes = {
 	'en-ca': 'en-CA', # English; Canada
 	'en': 'en', # English
 	'en-gb': 'en-GB', # English; Great Britain
-	'eo': 'eo',
+	'eo': 'eo', # Esperanto
 	'es': 'es',
 	'et': 'et',
 	'eu': 'eu',
@@ -737,7 +737,7 @@ langCodes = {
 	'sr-ec': 'sr-ec', # Serbian TODO incorrect code (unless it means Serbian from Ecuador ;-)
 	'sr-el': 'sr-el', # Serbian? TODO incorrect code (el undefined)
 	'srn': 'srn',
-	'sr': 'sr', # Serbian TODO should probalby be sr-Cyrl
+	'sr': 'sr', # Serbian TODO should probably be sr-Cyrl
 	'ss': 'ss',
 	'stq': 'stq',
 	'st': 'st',
