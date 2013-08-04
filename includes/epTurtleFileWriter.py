@@ -560,7 +560,7 @@ langCodes = {
 	'fy': 'fy',
 	'ga': 'ga',
 	'gag': 'gag',
-	'gan': 'gan',
+	'gan': 'gan', # Gan Chinese; TODO which script?
 	'gan-hans': 'gan-Hans', # Gan Chinese; script Han (simplified)
 	'gan-hant': 'gan-Hant', # Gan Chinese; script Han (traditional)
 	'gd': 'gd',
