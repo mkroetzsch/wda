@@ -755,7 +755,7 @@ langCodes = {
 	'tk': 'tk',
 	'tl': 'tl',
 	'tn': 'tn',
-	'tokipona': 'tokipona', # TODO no correct code, not even formally
+	'tokipona': 'mis-x-tokipona', # Tokipona, a constructed language without a code
 	'to': 'to',
 	'tpi': 'tpi',
 	'tr': 'tr',
