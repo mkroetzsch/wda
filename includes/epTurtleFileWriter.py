@@ -129,7 +129,7 @@ class EPTurtleFile(entityprocessor.EntityProcessor):
 				logging.log("*** Warning: the following sitekey was not understood: " + sitekey)
 				continue
 
-			articletitle = data['links'][sitekey].encode('utf-8')
+			articletitle = data['links'][sitekey].replace(' ','_').encode('utf-8')
 			self.output.write( "\n<" + urlPrefix + urllib.quote(articletitle) + ">\n\ta\tso:Article" )
 			self.output.write( " ;\n\tso:about\tw:" + title )
 			if sitekey in siteLanguageCodes:
@@ -809,7 +809,8 @@ langCodes = {
 
 # The languages used on sites linked from Wikidata in terms of
 # BCP 47 http://www.rfc-editor.org/rfc/bcp/bcp47.txt.
-# So far, this is mostly identity; needs careful revision.
+# Exceptional Wikipedia language codes are documented at
+# http://meta.wikimedia.org/wiki/Special_language_codes
 siteLanguageCodes = {
 	'aawiki' : 'aa',
 	'abwiki' : 'ab',
