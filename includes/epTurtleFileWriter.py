@@ -235,7 +235,8 @@ class EPTurtleFile(entityprocessor.EntityProcessor):
 	# the given language code is supported, so this must be checked first.
 	# The string is expected to be JSON escaped (as in Wikidata exports).
 	def __encodeStringLiteral(self,string,lang = False):
-		literal = string.replace("\\","\\\\").replace('"','\\"').replace("'","\\'").encode('utf-8')
+		literal = string.replace("\\","\\\\").replace('"','\\"').encode('utf-8')
+		# Note: Turtle also supports the escape \', but using it does not seem necessary.
 		if lang == False:
 			return '"' + literal + '"'
 		else:
