@@ -467,16 +467,17 @@ datatypesByValueTypes = {
 
 # The meaning of Wikimedia language codes in terms of
 # BCP 47 http://www.rfc-editor.org/rfc/bcp/bcp47.txt.
-# So far, this is mostly identity; needs careful revision.
 # All official IANA codes are at
 # http://www.iana.org/assignments/language-subtag-registry/language-subtag-registry
+# Exceptional Wikipedia language codes are at
+# http://meta.wikimedia.org/wiki/Special_language_codes
 langCodes = {
 	'ab': 'ab', # Abkhazian
 	'ace': 'ace',
 	'af': 'af',
 	'ak': 'ak',
 	'aln': 'aln',
-	'als': 'als',
+	'als': 'gsw', # Swiss German (Alsatian/Alemannic)
 	'am': 'am',
 	'an': 'an',
 	'ang': 'ang',
@@ -509,7 +510,7 @@ langCodes = {
 	'bug': 'bug',
 	'bxr': 'bxr',
 	'ca': 'ca',
-	'cbk-zam': 'cbk-zam', # Chavacano? TODO probably no correct code
+	'cbk-zam': 'cbk-x-zam', # Chavacano de Zamboanga
 	'cdo': 'cdo',
 	'ceb': 'ceb',
 	'ce': 'ce',
@@ -538,7 +539,7 @@ langCodes = {
 	'ee': 'ee',
 	'egl': 'egl',
 	'el': 'el',
-	'eml': 'eml',
+	'eml': 'eml', # Emilian-Romagnol; 'eml' is now retired and split into egl (Emilian) and rgn (Romagnol), but eml will remain a valid BCP 47 language tag indefinitely (see bugzilla:34217)
 	'en-ca': 'en-CA', # English; Canada
 	'en': 'en', # English
 	'en-gb': 'en-GB', # English; Great Britain
@@ -622,7 +623,7 @@ langCodes = {
 	'ko': 'ko',
 	'krc': 'krc',
 	'krj': 'krj',
-	'ksh': 'ksh',
+	'ksh': 'mis-x-rip', # Ripuarian (the code "ksh" refers to Koelsch, a subset of Ripuarian)
 	'ks': 'ks',
 	'ku-arab': 'ku-Arab', # Kurdish; script Arabic
 	'ku': 'ku', # Kurdish; TODO this is a macrolanguage; anything more specific? TODO all uses seem to be in Latin -- should this be ku-Latn then?
@@ -647,7 +648,7 @@ langCodes = {
 	'lt': 'lt',
 	'lv': 'lv',
 	'lzh': 'lzh', # Literary Chinese
-	'map-bms': 'map-bms', # TODO probably no correct code; should be Basa Banyumasan
+	'map-bms': 'jv-x-bms', # Basa Banyumasan has no code; jv is a superset (Javanese)
 	'mdf': 'mdf',
 	'mg': 'mg',
 	'mhr': 'mhr',
@@ -671,7 +672,7 @@ langCodes = {
 	'nap': 'nap',
 	'nb': 'nb',
 	'nds': 'nds', # Low German
-	'nds-nl': 'nds-NL', # Low German, Netherlands
+	'nds-nl': 'nds-NL', # Low German, Netherlands; TODO might be redundant (nds might be the same)
 	'ne': 'ne',
 	'new': 'new',
 	'ng': 'ng',
@@ -680,7 +681,7 @@ langCodes = {
 	'nn': 'nn',
 	'no': 'no', # TODO possibly this is "nb" (Norwegian Bokmål); but current dumps have different values for "nb" and "no" in some cases
 	'nov': 'nov',
-	'nrm': 'nrm',
+	'nrm': 'fr-x-nrm', # Norman; no individual code; lumped with French in ISO 639/3
 	'nso': 'nso',
 	'nv': 'nv',
 	'ny': 'ny',
@@ -709,10 +710,10 @@ langCodes = {
 	'rmy': 'rmy',
 	'rn': 'rn',
 	'roa-rup': 'rup', # TODO might be redundant
-	'roa-tara': 'roa-tara', # TODO probably no correct code
+	'roa-tara': 'it-x-tara', # Tarantino; no language code, ISO 639-3 lumps it with Italian
 	'ro': 'ro',
 	'rue': 'rue',
-	'rup': 'rup',
+	'rup': 'rup', # Macedo-Romanian/Aromanian
 	'ru': 'ru',
 	'rw': 'rw',
 	'sah': 'sah',
@@ -725,7 +726,7 @@ langCodes = {
 	'sg': 'sg',
 	'sgs': 'sgs',
 	'shi': 'shi',
-	'sh': 'sh',
+	'sh': 'sh', # Serbo-Croatian; macrolanguage, not modern but a valid BCP 47 tag
 	'simple': 'en-x-simple', # custom private subtag for simple English
 	'si': 'si',
 	'sk': 'sk',
@@ -735,10 +736,10 @@ langCodes = {
 	'sn': 'sn',
 	'so': 'so',
 	'sq': 'sq',
-	'sr-ec': 'sr-ec', # Serbian TODO incorrect code (unless it means Serbian from Ecuador ;-)
-	'sr-el': 'sr-el', # Serbian? TODO incorrect code (el undefined)
+	'sr-ec': 'sr-Cyrl', # Serbian; Cyrillic script (might change if dialect codes are added to IANA)
+	'sr-el': 'sr-Latn', # Serbian; Latin script (might change if dialect codes are added to IANA)
 	'srn': 'srn',
-	'sr': 'sr', # Serbian TODO should probably be sr-Cyrl
+	'sr': 'sr', # Serbian TODO should probably be sr-Cyrl too?
 	'ss': 'ss',
 	'stq': 'stq',
 	'st': 'st',
@@ -815,7 +816,7 @@ siteLanguageCodes = {
 	'acewiki' : 'ace',
 	'afwiki' : 'af',
 	'akwiki' : 'ak',
-	'alswiki' : 'gsw', # Swiss German (Alsatian)
+	'alswiki' : 'gsw', # Swiss German (Alsatian/Alemannic)
 	'amwiki' : 'am',
 	'angwiki' : 'ang',
 	'anwiki' : 'an',
@@ -828,7 +829,7 @@ siteLanguageCodes = {
 	'aywiki' : 'ay',
 	'azwiki' : 'az',
 	'barwiki' : 'bar',
-	'bat_smgwiki' : 'sgs', #Samogitian
+	'bat_smgwiki' : 'sgs', # Samogitian
 	'bawiki' : 'ba',
 	'bclwiki' : 'bcl',
 	'be_x_oldwiki' : 'be-tarask', # Belarusian in Taraskievica orthography
@@ -846,7 +847,7 @@ siteLanguageCodes = {
 	'bugwiki' : 'bug',
 	'bxrwiki' : 'bxr',
 	'cawiki' : 'ca',
-	'cbk_zamwiki' : 'cbk-zam', # TODO probably no correct code
+	'cbk_zamwiki' : 'cbk-x-zam', # Chavacano de Zamboanga
 	'cdowiki' : 'cdo',
 	'cebwiki' : 'ceb',
 	'cewiki' : 'ce',
@@ -948,7 +949,7 @@ siteLanguageCodes = {
 	'kowiki' : 'ko',
 	'krcwiki' : 'krc',
 	'krwiki' : 'kr',
-	'kshwiki' : 'ksh',
+	'kshwiki' : 'mis-x-rip', # Ripuarian (the code "ksh" refers to Koelsch, a subset of Ripuarian)
 	'kswiki' : 'ks',
 	'kuwiki' : 'ku',
 	'kvwiki' : 'kv',
@@ -968,7 +969,7 @@ siteLanguageCodes = {
 	'ltgwiki' : 'ltg',
 	'ltwiki' : 'lt',
 	'lvwiki' : 'lv',
-	'map_bmswiki' : 'map-bms', # TODO probably no correct code
+	'map_bmswiki' : 'jv-x-bms', # Basa Banyumasan has no code; jv is a superset (Javanese)
 	'mdfwiki' : 'mdf',
 	'mgwiki' : 'mg',
 	'mhrwiki' : 'mhr',
@@ -991,7 +992,7 @@ siteLanguageCodes = {
 	'nahwiki' : 'nah',
 	'napwiki' : 'nap',
 	'nawiki' : 'na',
-	'nds_nlwiki' : 'nds-nl', # TODO probably no correct code
+	'nds_nlwiki' : 'nds-NL', # Low German, Netherlands; TODO might be redundant (nds might be the same)
 	'ndswiki' : 'nds',
 	'newiki' : 'ne',
 	'newwiki' : 'new',
@@ -1001,7 +1002,7 @@ siteLanguageCodes = {
 	'nnwiki' : 'nn',
 	'novwiki' : 'nov',
 	'nowiki' : 'nb', # Norwegian Bokmål
-	'nrmwiki' : 'nrm',
+	'nrmwiki' : 'fr-x-nrm', # Norman; no individual code; lumped with French in ISO 639/3
 	'nsowiki' : 'nso',
 	'nvwiki' : 'nv',
 	'nywiki' : 'ny',
@@ -1030,8 +1031,8 @@ siteLanguageCodes = {
 	'rmwiki' : 'rm',
 	'rmywiki' : 'rmy',
 	'rnwiki' : 'rn',
-	'roa_rupwiki' : 'rup', # Macedo-Romanian
-	'roa_tarawiki' : 'roa-tara', # TODO probably no correct code
+	'roa_rupwiki' : 'rup', # Macedo-Romanian/Aromanian
+	'roa_tarawiki' : 'it-x-tara', # Tarantino; no language code, ISO 639-3 lumps it with Italian
 	'rowiki' : 'ro',
 	'rowikivoyage' : 'ro',
 	'ruewiki' : 'rue',
@@ -1046,7 +1047,7 @@ siteLanguageCodes = {
 	'sdwiki' : 'sd',
 	'sewiki' : 'se',
 	'sgwiki' : 'sg',
-	'shwiki' : 'sh',
+	'shwiki' : 'sh', # Serbo-Croatian; macrolanguage, not modern but a valid BCP 47 tag
 	'simplewiki' : 'en',
 	'siwiki' : 'si',
 	'skwiki' : 'sk',
