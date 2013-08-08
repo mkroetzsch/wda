@@ -264,9 +264,10 @@ class EPTurtleFile(entityprocessor.EntityProcessor):
 			yearnum = int(wikidataTime[:12])
 			month = wikidataTime[13:15]
 			day = wikidataTime[16:18]
-		except ValueError: # some rare values seem to have other year lengths
+		except ValueError: # some rare values have broken formats
 			logging.log("*** Warning: unexpected date format '" + wikidataTime + "'.")
-			return '"' + wikidataTime + '"^^x:dateTime' # let's hope this works
+			#return '"' + wikidataTime + '"^^x:dateTime' # < not valid in some old dumps
+			return '"2007-05-12T10:30:42Z"^^x:dateTime' # use an arbitrary but valid time; should be very rare (only in old dumps)
 
 		# Wikidata encodes the year 1BCE as 0000, while XML Schema, even in
 		# version 2, does not allow 0000 and interprets -0001 as 1BCE. Thus
