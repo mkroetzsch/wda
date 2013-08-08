@@ -1256,10 +1256,17 @@ knownPropertyTypes = {
 	'P724' : 'string', 'P725' : 'wikibase-item', 'P726' : 'wikibase-item', 'P727' : 'string',
 	'P728' : 'string', 'P729' : 'time', 'P730' : 'time', 'P731' : 'string',
 	'P732' : 'string', 'P733' : 'string', 'P734' : 'wikibase-item', 'P735' : 'wikibase-item',
-	'P74' : 'wikibase-item', 'P75' : 'wikibase-item', 'P76' : 'wikibase-item', 'P77' : 'wikibase-item',
-	'P78' : 'wikibase-item', 'P81' : 'wikibase-item', 'P84' : 'wikibase-item', 'P85' : 'wikibase-item',
-	'P86' : 'wikibase-item', 'P87' : 'wikibase-item', 'P88' : 'wikibase-item', 'P89' : 'wikibase-item',
-	'P9' : 'wikibase-item', 'P91' : 'wikibase-item', 'P92' : 'wikibase-item', 'P94' : 'commonsMedia',
-	'P97' : 'wikibase-item', 'P98' : 'wikibase-item'
+	'P736' : 'wikibase-item', 'P737' : 'wikibase-item', 'P738' : 'wikibase-item', 'P739' : 'wikibase-item',
+	'P74' : 'wikibase-item', 'P740' : 'wikibase-item', 'P741' : 'wikibase-item', 'P742' : 'string',
+	'P743' : 'string', 'P744' : 'wikibase-item', 'P745' : 'string', 'P746' : 'time',
+	'P747' : 'wikibase-item', 'P748' : 'wikibase-item', 'P749' : 'wikibase-item', 'P75' : 'wikibase-item',
+	'P750' : 'wikibase-item', 'P751' : 'wikibase-item', 'P756' : 'wikibase-item', 'P757' : 'string',
+	'P758' : 'string', 'P759' : 'string', 'P76' : 'wikibase-item', 'P760' : 'string',
+	'P761' : 'string', 'P762' : 'string', 'P763' : 'string', 'P764' : 'string',
+	'P765' : 'wikibase-item', 'P766' : 'wikibase-item', 'P767' : 'wikibase-item', 'P768' : 'wikibase-item',
+	'P769' : 'wikibase-item', 'P77' : 'wikibase-item', 'P770' : 'wikibase-item', 'P78' : 'wikibase-item',
+	'P81' : 'wikibase-item', 'P84' : 'wikibase-item', 'P85' : 'wikibase-item', 'P86' : 'wikibase-item',
+	'P87' : 'wikibase-item', 'P88' : 'wikibase-item', 'P89' : 'wikibase-item', 'P9' : 'wikibase-item',
+	'P91' : 'wikibase-item', 'P92' : 'wikibase-item', 'P94' : 'commonsMedia', 'P97' : 'wikibase-item',
+	'P98' : 'wikibase-item'
 }
-
