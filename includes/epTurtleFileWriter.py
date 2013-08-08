@@ -368,7 +368,7 @@ class EPTurtleFile(entityprocessor.EntityProcessor):
 		## TODO Currently unused -- do not export yet.
 		#self.output.write( " ;\n\two:timePrecisionBefore\t" + self.__encodeIntegerLiteral(value['before']) )
 		#self.output.write( " ;\n\two:timePrecisionAfter\t" + self.__encodeIntegerLiteral(value['after']) )
-		self.output.write( " ;\n\two:preferredCalendar\tw:" + value['calendarmodel'][35:] )
+		self.output.write( " ;\n\two:preferredCalendar\tw:" + value['calendarmodel'][31:] )
 		self.output.write(" .\n")
 
 	# Write the data for a coordinates datavalue with the given local name.
