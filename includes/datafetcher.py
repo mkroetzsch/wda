@@ -245,7 +245,7 @@ class DataFetcher:
 			return None
 		else:
 			self.__cdData()
-			os.chdir('dump' + self.latestdump)
+			os.chdir(self.dumpDirName + self.latestdump)
 			file = bz2.BZ2File(self.dumpFileName)
 			self.__cdBase()
 			return file
