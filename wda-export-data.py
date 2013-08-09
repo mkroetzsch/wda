@@ -36,6 +36,9 @@ parser.add_argument('--datatypes', metavar='TYPE', nargs='+', type=str, default=
 parser.add_argument('--no-refs', dest='includeRefs', action='store_const',\
 		const=False, default=True,\
 		help='omit references in statements (default: include them)')
+parser.add_argument('--no-current', dest='useCurrent', action='store_const',\
+		const=False, default=True,\
+		help='work with dumps containing all revisions (default: use dumps that contain only current revisions)')
 
 args = parser.parse_args()
 
@@ -48,7 +51,7 @@ if not os.path.exists('results') :
 	os.makedirs('results')
 
 ## Fetch and process data:
-df = datafetcher.DataFetcher(args.offlineMode)
+df = datafetcher.DataFetcher(args.offlineMode,args.useCurrent)
 curdate = df.getLatestDate()
 
 # Define which processing should happen on the data:
