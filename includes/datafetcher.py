@@ -27,6 +27,7 @@ class DataFetcher:
 		self.maxrevid = False
 		self.stopdaily = False
 		self.offline = offline
+		self.maxdumpdate = 'ANYTIME' # only consider dates before that time (ANYTIME sorts after all real dates)
 		# Select which main dump files to get
 		if current:
 			self.dumpPostFix = '-pages-meta-current.xml.bz2'
@@ -41,7 +42,12 @@ class DataFetcher:
 		# Note: to find existing directories easily, the dirname
 		# must not be a prefix of any other possible dirname.
 
-	# Find out which daily dump files are available on the Web.
+	# Set another maximal date for dumps to consider.
+	# The date should be formatted as YYYYMMDD.
+	def setMaxDumpDate(self,date):
+		self.maxdumpdate = date
+
+	# Find out which daily dump files are available, either locally or online.
 	def getDailyDates(self):
 		if not self.dailies:
 			self.dailies = []
@@ -98,11 +104,12 @@ class DataFetcher:
 			dumpProcessor.processFile(file)
 			file.close()
 
-	# Find out when the last successful dump happened.
+	# Find out when the last successful dump happened, and which is not later
+	# than self.maxdumpdate.
 	def getLatestDumpDate(self):
 		if not self.latestdump:
+			self.latestdump = '00000000'
 			if self.offline:
-				self.latestdump = '00000000'
 				logging.logMore('Checking for the date of the last local ' + self.dumpName + ' ')
 				dataDirs = os.listdir("data")
 				for dirName in dataDirs:
@@ -110,11 +117,10 @@ class DataFetcher:
 					date = dirName[len(self.dumpDirName):]
 					if not re.match('\d\d\d\d\d\d\d\d', date) : continue
 					logging.logMore('.')
-					if date > self.latestdump:
+					if date > self.latestdump and date <= self.maxdumpdate:
 						self.latestdump = date
 			else:
 				logging.logMore('Checking for the date of the last online ' + self.dumpName + ' ')
-				self.latestdump = '20121026'
 				for line in urllib.urlopen('http://dumps.wikimedia.org/wikidatawiki/') :
 					if not line.startswith('<tr><td class="n">') : continue
 					date = line[27:35]
@@ -126,7 +132,8 @@ class DataFetcher:
 					for md5 in urllib.urlopen('http://dumps.wikimedia.org/wikidatawiki/' + date + '/wikidatawiki-' + date + '-md5sums.txt') :
 						if md5.endswith(self.dumpPostFix + "\n") :
 							finished = True
-					if finished :
+							break
+					if finished and date > self.latestdump and date <= self.maxdumpdate:
 						self.latestdump = date
 
 			if self.latestdump == '00000000':
@@ -182,7 +189,8 @@ class DataFetcher:
 
 		self.__cdBase()
 
-	# Download all available daily dump files that are newer than the latest dump.
+	# Download all available daily dump files that are newer than the latest dump,
+	# but not more recent than self.maxdumpdate.
 	# In offline mode, this will only consider dailies for which there is a local
 	# directory already. Assuming proper donwloads happened earlier, no further
 	# download will be needed.
@@ -199,6 +207,11 @@ class DataFetcher:
 			if not os.path.exists('daily' + daily) :
 				os.makedirs('daily' + daily)
 			os.chdir('daily' + daily)
+
+			if daily > self.maxdumpdate:
+				logging.log('too recent to consider')
+				os.chdir('..')
+				continue
 
 			if not os.path.exists('maxrevid.txt') :
 				urllib.urlretrieve('http://dumps.wikimedia.org/other/incr/wikidatawiki/' + daily + '/maxrevid.txt', 'maxrevid.txt')

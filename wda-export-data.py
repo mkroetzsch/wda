@@ -39,6 +39,8 @@ parser.add_argument('--no-refs', dest='includeRefs', action='store_const',\
 parser.add_argument('--no-current', dest='useCurrent', action='store_const',\
 		const=False, default=True,\
 		help='work with dumps containing all revisions (default: use dumps that contain only current revisions)')
+parser.add_argument('--max-date', metavar='YYYYMMDD', dest='maxDate', type=str, default=True,\
+		help='only consider dumps up to this date (default: consider all dumps up to now); note that older (daily) dumps may no longer be available online')
 
 args = parser.parse_args()
 
@@ -52,6 +54,8 @@ if not os.path.exists('results') :
 
 ## Fetch and process data:
 df = datafetcher.DataFetcher(args.offlineMode,args.useCurrent)
+if args.maxDate != True:
+	df.setMaxDumpDate(args.maxDate)
 curdate = df.getLatestDate()
 
 # Define which processing should happen on the data:
