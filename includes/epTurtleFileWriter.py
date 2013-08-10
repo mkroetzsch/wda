@@ -193,24 +193,28 @@ class EPTurtleFile(entityprocessor.EntityProcessor):
 			str(self.statReferenceCount) + ' references\n# * types of main properties: ' +
 			str(self.statStmtTypeCounts) + '\n# * types of qualifier properties: ' +
 			str(self.statQualiTypeCounts) + '\n# * types of reference properties: ' +
-			str(self.statRefTypeCounts) + '\n' +
-			'###\n### The following is a CSV compatible list with property statistics:\n' +
-			'### (Values for references refer to how often a value for a certain Wikidata\n' +
-			'### property was included in the RDF export. It may occur more often if\n' +
-			'### several statements of an item use the same reference -- a common case.)\n###\n' +
-			'#,property id,type,use as main property,use in qualifiers,use in references\n')
-		for p in sorted(self.statStmtPropertyCounts, key=self.statStmtPropertyCounts.get, reverse=True):
-			self.output.write( '#,' + str(p) + ',' + self.__getPropertyType('P' + str(p)) + ',' + str(self.statStmtPropertyCounts[p]) )
-			if p in self.statQualiPropertyCounts:
-				self.output.write( ',' + str(self.statQualiPropertyCounts[p]) )
-			else:
-				self.output.write( ',0' )
-			if p in self.statRefPropertyCounts:
-				self.output.write( ',' + str(self.statRefPropertyCounts[p]) )
-			else:
-				self.output.write( ',0' )
-			self.output.write( '\n' )
-		self.output.write('###END###\n###\n')
+			str(self.statRefTypeCounts) + '\n')
+
+		if self.dataFilter.includeStatements():
+			self.output.write('###\n### The following is a CSV compatible list with property statistics:\n' +
+				'### (Values for references refer to how often a value for a certain Wikidata\n' +
+				'### property was included in the RDF export. It may occur more often if\n' +
+				'### several statements of an item use the same reference -- a common case.)\n###\n' +
+				'#,property id,type,use as main property,use in qualifiers,use in references\n')
+			for p in sorted(self.statStmtPropertyCounts, key=self.statStmtPropertyCounts.get, reverse=True):
+				self.output.write( '#,' + str(p) + ',' + self.__getPropertyType('P' + str(p)) + ',' + str(self.statStmtPropertyCounts[p]) )
+				if p in self.statQualiPropertyCounts:
+					self.output.write( ',' + str(self.statQualiPropertyCounts[p]) )
+				else:
+					self.output.write( ',0' )
+				if p in self.statRefPropertyCounts:
+					self.output.write( ',' + str(self.statRefPropertyCounts[p]) )
+				else:
+					self.output.write( ',0' )
+				self.output.write( '\n' )
+			self.output.write('###END###\n')
+
+		self.output.write('###\n')
 
 	def close(self):
 		self.__addStatisticsComments()
@@ -430,7 +434,11 @@ class EPTurtleFile(entityprocessor.EntityProcessor):
 		if value['precision'] != None:
 			self.__addPO( "wo:gcPrecision", self.__encodeFloatLiteral(value['precision']) )
 		if value['globe'] != None:
-			self.__addPO( "wo:globe", "w:" + value['globe'][31:] )
+			try:
+				globeId = str(int(value['globe'][32:]))
+				self.__addPO( "wo:globe", "w:Q" + globeId )
+			except ValueError:
+				logging.log("*** Warning: illegal globe specification '" + value['globe'] + "'.")
 		self.__endTriples()
 
 	# Write the data for one snak. Since we use different variants of
