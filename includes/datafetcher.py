@@ -10,7 +10,16 @@ import logging
 # Main entry points are getNewerDailyDates(), getDailyFile(),
 # getLatestDumpFile(), and (easiest) processRecentDumps().
 class DataFetcher:
-	def __init__(self, offline = False):
+
+	# Constructor.
+	#
+	# offline: bool, if True then only previously downloaded dumps will be used
+	# current: bool, if True then dumps with only current versions instead of full history will be used
+	#
+	# Note that "current" only affects which main dump to get, without any
+	# impact on the dailies. Processors therefore must never assume that
+	# the data contains only one (most recent) revision of each file.
+	def __init__(self, offline = False, current = False):
 		self.basePath = os.getcwd()
 		self.dailies = False
 		self.newerdailies = False # Dates of dailies that are more recent than the dump
@@ -18,11 +27,27 @@ class DataFetcher:
 		self.maxrevid = False
 		self.stopdaily = False
 		self.offline = offline
-		# For testing; setting this avoids delays due to http requests:
-		#self.dailies = ['20130511', '20130512', '20130513', '20130514', '20130515', '20130516', '20130517', '20130518', '20130519', '20130520', '20130521', '20130522', '20130523', '20130524', '20130525', '20130526', '20130527', '20130528', '20130529', '20130530', '20130531', '20130601']
-		#self.latestdump = '20130514'
+		self.maxdumpdate = 'ANYTIME' # only consider dates before that time (ANYTIME sorts after all real dates)
+		# Select which main dump files to get
+		if current:
+			self.dumpPostFix = '-pages-meta-current.xml.bz2'
+			self.dumpDirName = 'curdump'
+			self.dumpFileName = 'pages-meta-current.xml.bz2'
+			self.dumpName = 'dump of current revisions'
+		else:
+			self.dumpPostFix = '-pages-meta-history.xml.bz2'
+			self.dumpDirName = 'dump'
+			self.dumpFileName = 'pages-meta-history.xml.bz2'
+			self.dumpName = 'dump of all revisions'
+		# Note: to find existing directories easily, the dirname
+		# must not be a prefix of any other possible dirname.
 
-	# Find out which daily dump files are available on the Web.
+	# Set another maximal date for dumps to consider.
+	# The date should be formatted as YYYYMMDD.
+	def setMaxDumpDate(self,date):
+		self.maxdumpdate = date
+
+	# Find out which daily dump files are available, either locally or online.
 	def getDailyDates(self):
 		if not self.dailies:
 			self.dailies = []
@@ -58,6 +83,8 @@ class DataFetcher:
 	# Convenience method to iterate over all available dump data,
 	# most recent first, using the given processor.
 	def processRecentDumps(self,dumpProcessor):
+		if self.latestdump == '00000000':
+			logging.log('*** Warning: no latest ' + self.dumpName + ' found.\n*** Analysing dailies only now.\n*** Results might be incomplete.')
 		for daily in self.getNewerDailyDates() :
 			logging.log('Analysing daily ' + daily + ' ...')
 			try:
@@ -69,28 +96,31 @@ class DataFetcher:
 				file.close()
 
 		# Finally also process the latest main dump:
-		logging.log('Analysing latest dump ' + self.getLatestDumpDate() + ' ...')
-		file = self.getLatestDumpFile()
-		dumpProcessor.processFile(file)
-		file.close()
+		if self.latestdump == '00000000':
+			logging.log('*** Warning: no latest ' + self.dumpName + ' found.')
+		else:
+			logging.log('Analysing latest ' + self.dumpName + ' ' + self.getLatestDumpDate() + ' ...')
+			file = self.getLatestDumpFile()
+			dumpProcessor.processFile(file)
+			file.close()
 
-	# Find out when the last successful dump happened.
+	# Find out when the last successful dump happened, and which is not later
+	# than self.maxdumpdate.
 	def getLatestDumpDate(self):
 		if not self.latestdump:
+			self.latestdump = '00000000'
 			if self.offline:
-				self.latestdump = '00000000'
-				logging.logMore('Checking for the date of the last local dump ')
+				logging.logMore('Checking for the date of the last local ' + self.dumpName + ' ')
 				dataDirs = os.listdir("data")
 				for dirName in dataDirs:
-					if not dirName.startswith('dump'): continue
-					date = dirName[4:]
+					if not dirName.startswith(self.dumpDirName): continue
+					date = dirName[len(self.dumpDirName):]
 					if not re.match('\d\d\d\d\d\d\d\d', date) : continue
 					logging.logMore('.')
-					if date > self.latestdump:
+					if date > self.latestdump and date <= self.maxdumpdate:
 						self.latestdump = date
 			else:
-				logging.logMore('Checking for the date of the last online dump ')
-				self.latestdump = '20121026'
+				logging.logMore('Checking for the date of the last online ' + self.dumpName + ' ')
 				for line in urllib.urlopen('http://dumps.wikimedia.org/wikidatawiki/') :
 					if not line.startswith('<tr><td class="n">') : continue
 					date = line[27:35]
@@ -100,12 +130,16 @@ class DataFetcher:
 					# check if dump is finished
 					finished = False
 					for md5 in urllib.urlopen('http://dumps.wikimedia.org/wikidatawiki/' + date + '/wikidatawiki-' + date + '-md5sums.txt') :
-						if md5.endswith('-pages-meta-history.xml.bz2' + "\n") :
+						if md5.endswith(self.dumpPostFix + "\n") :
 							finished = True
-					if finished :
+							break
+					if finished and date > self.latestdump and date <= self.maxdumpdate:
 						self.latestdump = date
 
-			logging.log(" latest dump is " + self.latestdump)
+			if self.latestdump == '00000000':
+				logging.log('-- Warning: no latest ' + self.dumpName + ' found.')
+			else:
+				logging.log(' latest ' + self.dumpName + ' is ' + self.latestdump)
 		return self.latestdump
 
 	# Change to the data directory.
@@ -122,11 +156,15 @@ class DataFetcher:
 	# Download the latest dump file, unless it is already available locally.
 	def fetchLatestDump(self):
 		self.getLatestDumpDate()
-		self.__cdData()
+		if self.latestdump == '00000000': # no offline dump found
+			self.maxrevid = 0
+			return # give up
+		# The rest we do even in offline mode to get the latest revision id:
 
-		if not os.path.exists('dump' + self.latestdump) :
-			os.makedirs('dump' + self.latestdump)
-		os.chdir('dump' + self.latestdump)
+		self.__cdData()
+		if not os.path.exists(self.dumpDirName + self.latestdump) :
+			os.makedirs(self.dumpDirName + self.latestdump)
+		os.chdir(self.dumpDirName + self.latestdump)
 
 		if not os.path.exists('site_stats.sql.gz') :
 			logging.log('Downloading stats of the latest dump (' + self.latestdump + ') ...')
@@ -135,11 +173,11 @@ class DataFetcher:
 			logging.log('Stats of the latest dump (' + self.latestdump + ') found. No download needed.')
 
 		# download the latest dump if needed
-		if not os.path.exists('pages-meta-history.xml.bz2') :
-			logging.log('Downloading latest dump ...')
-			urllib.urlretrieve('http://dumps.wikimedia.org/wikidatawiki/' + self.latestdump + '/wikidatawiki-' + self.latestdump + '-pages-meta-history.xml.bz2', 'pages-meta-history.xml.bz2') #xxx
+		if not os.path.exists(self.dumpFileName) :
+			logging.log('Downloading latest ' + self.dumpName + ' ...')
+			urllib.urlretrieve('http://dumps.wikimedia.org/wikidatawiki/' + self.latestdump + '/wikidatawiki-' + self.latestdump + self.dumpPostFix, self.dumpFileName) #xxx
 		else:
-			logging.log('Latest dump (' + self.latestdump + ') found. No download needed.')
+			logging.log('Latest ' + self.dumpName + ' (' + self.latestdump + ') found. No download needed.')
 
 		if not self.maxrevid:
 			for line in gzip.open('site_stats.sql.gz'):
@@ -147,11 +185,15 @@ class DataFetcher:
 				stats = eval(line[32:-2])
 				self.maxrevid = int(stats[2])
 				break
-		logging.log('Maximal revision id of the latest dump: ' + str(self.maxrevid))
+		logging.log('Maximal revision id of the latest ' + self.dumpName + ': ' + str(self.maxrevid))
 
 		self.__cdBase()
 
-	# Download all available daily dump files that are newer than the latest dump.
+	# Download all available daily dump files that are newer than the latest dump,
+	# but not more recent than self.maxdumpdate.
+	# In offline mode, this will only consider dailies for which there is a local
+	# directory already. Assuming proper donwloads happened earlier, no further
+	# download will be needed.
 	def fetchNewerDailies(self):
 		self.getDailyDates()
 		if not self.maxrevid:
@@ -166,12 +208,17 @@ class DataFetcher:
 				os.makedirs('daily' + daily)
 			os.chdir('daily' + daily)
 
+			if daily > self.maxdumpdate:
+				logging.log('too recent to consider')
+				os.chdir('..')
+				continue
+
 			if not os.path.exists('maxrevid.txt') :
 				urllib.urlretrieve('http://dumps.wikimedia.org/other/incr/wikidatawiki/' + daily + '/maxrevid.txt', 'maxrevid.txt')
 			dailymaxrevid = int(open('maxrevid.txt').read())
 
 			if dailymaxrevid < self.maxrevid :
-				logging.log('already in latest dump')
+				logging.log('already in latest ' + self.dumpName)
 				self.stopdaily = daily
 				os.chdir('..')
 				break
@@ -206,11 +253,15 @@ class DataFetcher:
 
 	# Get a file handler for the latest full dump.
 	def getLatestDumpFile(self):
-		self.__cdData()
-		os.chdir('dump' + self.latestdump)
-		file = bz2.BZ2File('pages-meta-history.xml.bz2')
-		self.__cdBase()
-		return file
+		if self.latestdump == '00000000':
+			logging.log('*** Error: no latest ' + self.dumpName + ' found.')
+			return None
+		else:
+			self.__cdData()
+			os.chdir(self.dumpDirName + self.latestdump)
+			file = bz2.BZ2File(self.dumpFileName)
+			self.__cdBase()
+			return file
 
 	# Get a file handler for the daily dump of the given date.
 	# There is no error handling; if the file does not exist, an exception will occur.

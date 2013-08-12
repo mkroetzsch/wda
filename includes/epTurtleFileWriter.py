@@ -13,13 +13,24 @@ class EPTurtleFile(entityprocessor.EntityProcessor):
 	def __init__(self,outputFile,dataFilter):
 		self.output = outputFile
 		self.dataFilter = dataFilter
-		self.entityCount = 0
-		self.propertyCount = 0
-		self.propertyLookupCount = 0
 		self.propertyTypes = {}
 		self.propertyDeclarationQueue = []
 		self.filterName = self.dataFilter.getHashCode()
+		# Keep some statistics (inserted at end of file):
+		self.entityCount = 0
+		self.propertyCount = 0 # number of OWL property declarations, not of Wikidata properties
+		self.propertyLookupCount = 0 # number of additional online lookups
+		self.statStatementCount = 0
+		self.statReferenceCount = 0
+		self.statStmtPropertyCounts = {}
+		self.statStmtTypeCounts = {}
+		self.statQualiPropertyCounts = {}
+		self.statQualiTypeCounts = {}
+		self.statRefPropertyCounts = {}
+		self.statRefTypeCounts = {}
+		self.statTripleCount = 0
 
+		# Make header:
 		self.output.write( '### Wikidata OWL/RDF Turtle dump\n' )
 		self.output.write( '# Filter settings (' + self.filterName + ')\n' )
 		for infostr in self.dataFilter.getFilterSettingsInfo():
@@ -37,22 +48,22 @@ class EPTurtleFile(entityprocessor.EntityProcessor):
 		self.output.write("@prefix pv: <http://www.w3.org/ns/prov#> .\n")
 		# Also inline some basic property declarations to help processing without resolving imports:
 		# (class declarations are not needed, as they can be inferred from the context in all cases)
-		self.output.write( "\nwo:propertyType\ta\to:ObjectProperty ." )
-		self.output.write( "\nwo:globe\ta\to:ObjectProperty ." )
-		self.output.write( "\nwo:latitude\ta\to:DatatypeProperty ." )
-		self.output.write( "\nwo:longitude\ta\to:DatatypeProperty ." )
-		self.output.write( "\nwo:altitude\ta\to:DatatypeProperty ." )
-		self.output.write( "\nwo:gcPrecision\ta\to:DatatypeProperty ." )
-		self.output.write( "\nwo:time\ta\to:DatatypeProperty ." )
-		self.output.write( "\nwo:timePrecision\ta\to:DatatypeProperty ." )
-		#self.output.write( "\nwo:timePrecisionAfter\ta\to:DatatypeProperty ." ) # currently unused
-		#self.output.write( "\nwo:timePrecisionBefore\ta\to:DatatypeProperty ." ) # currently unused
-		self.output.write( "\nwo:preferredCalendar\ta\to:ObjectProperty ." )
+		self.__writeTriple( "wo:propertyType", "a", "o:ObjectProperty" )
+		self.__writeTriple( "wo:globe", "a", "o:ObjectProperty" )
+		self.__writeTriple( "wo:latitude", "a", "o:DatatypeProperty" )
+		self.__writeTriple( "wo:longitude", "a", "o:DatatypeProperty" )
+		self.__writeTriple( "wo:altitude", "a", "o:DatatypeProperty" )
+		self.__writeTriple( "wo:gcPrecision", "a", "o:DatatypeProperty" )
+		self.__writeTriple( "wo:time", "a", "o:DatatypeProperty" )
+		self.__writeTriple( "wo:timePrecision", "a", "o:DatatypeProperty" )
+		#self.__writeTriple( "wo:timePrecisionAfter", "a", "o:DatatypeProperty" ) # currently unused
+		#self.__writeTriple( "wo:timePrecisionBefore", "a", "o:DatatypeProperty" ) # currently unused
+		self.__writeTriple( "wo:preferredCalendar", "a", "o:ObjectProperty" )
 		# Other external properties that have a clear declaration:
 		# (we omit the rdfs and skos properties, which lack a clear typing)
-		self.output.write( "\npv:wasDerivedFrom\ta\to:ObjectProperty ." )
-		self.output.write( "\nso:about\ta\to:ObjectProperty ." )
-		self.output.write( "\nso:inLanguage\ta\to:DatatypeProperty ." )
+		self.__writeTriple( "pv:wasDerivedFrom", "a", "o:ObjectProperty" )
+		self.__writeTriple( "so:about", "a", "o:ObjectProperty" )
+		self.__writeTriple( "so:inLanguage", "a", "o:DatatypeProperty" )
 		self.output.write("\n")
 
 	def processEntity(self,title,revision,isItem,data):
@@ -60,23 +71,24 @@ class EPTurtleFile(entityprocessor.EntityProcessor):
 		self.refs = {} # collect references to export duplicates only once per item
 
 		if isItem:
-			self.output.write( '\nw:' + title + "\n\ta\two:Item" )
+			self.__startTriples( 'w:' + title, "a", "wo:Item" )
 		else:
-			self.output.write( '\nw:' + title + "\n\ta\two:Property" )
+			self.__startTriples( 'w:' + title, "a", "wo:Property" )
 
 		# Write datatype information, if any
 		if 'datatype' in data:
-			self.__setPropertyType(title,data['datatype'],True)
+			if self.dataFilter.includeStatements():
+				self.__setPropertyType(title,data['datatype'],True)
 			if data['datatype'] == 'wikibase-item':
-				self.output.write( " ;\n\two:propertyType\two:propertyTypeItem" )
+				self.__addPO( "wo:propertyType", "wo:propertyTypeItem" )
 			elif data['datatype'] == 'string':
-				self.output.write( " ;\n\two:propertyType\two:propertyTypeString" )
+				self.__addPO( "wo:propertyType", "wo:propertyTypeString" )
 			elif data['datatype'] == 'commonsMedia':
-				self.output.write( " ;\n\two:propertyType\two:propertyTypeCommonsMedia" )
+				self.__addPO( "wo:propertyType", "wo:propertyTypeCommonsMedia" )
 			elif data['datatype'] == 'time':
-				self.output.write( " ;\n\two:propertyType\two:propertyTypeTime" )
+				self.__addPO( "wo:propertyType", "wo:propertyTypeTime" )
 			elif data['datatype'] == 'globe-coordinate':
-				self.output.write( " ;\n\two:propertyType\two:propertyTypeGlobeCoordinates")
+				self.__addPO( "wo:propertyType", "wo:propertyTypeGlobeCoordinates")
 			else:
 				logging.log( '*** Warning: Unknown property type "' + data['datatype'] + '".'  )
 
@@ -97,12 +109,12 @@ class EPTurtleFile(entityprocessor.EntityProcessor):
 				i = statement['g'].index('$') + 1
 				statement['localname'] = title + 'S' + statement['g'][i:]
 				if curProperty == statement['m'][1]:
-					self.output.write( ",w:" + statement['localname'])
+					self.__addO( "w:" + statement['localname'])
 				else:
 					curProperty = statement['m'][1]
-					self.output.write( " ;\n\tw:P" + str(curProperty) + "s\tw:" + statement['localname'])
+					self.__addPO( "w:P" + str(curProperty) + "s", "w:" + statement['localname'])
 
-		self.output.write(" .\n")
+		self.__endTriples()
 
 		# Export statements:
 		if self.dataFilter.includeStatements():
@@ -112,10 +124,10 @@ class EPTurtleFile(entityprocessor.EntityProcessor):
 		# Export collected references:
 		if self.dataFilter.includeReferences():
 			for key in self.refs.keys():
-				self.output.write( '\nw:' + key + "\n\ta\two:Reference" )
+				self.__startTriples( 'w:' + key, "a", "wo:Reference" )
 				for snak in self.refs[key]:
-					self.__writeSnakData("w:P" + str(snak[1]) + 'r', snak)
-				self.output.write(" .\n")
+					self.__writeSnakData('r', snak)
+				self.__endTriples()
 
 		# Export links:
 		for sitekey in data['links'].keys() :
@@ -130,20 +142,28 @@ class EPTurtleFile(entityprocessor.EntityProcessor):
 				continue
 
 			articletitle = data['links'][sitekey].replace(' ','_').encode('utf-8')
-			self.output.write( "\n<" + urlPrefix + urllib.quote(articletitle) + ">\n\ta\tso:Article" )
-			self.output.write( " ;\n\tso:about\tw:" + title )
+			self.__startTriples( "<" + urlPrefix + urllib.quote(articletitle) + ">", "a", "so:Article" )
+			self.__addPO( "so:about", "w:" + title )
 			if sitekey in siteLanguageCodes:
-				self.output.write( " ;\n\tso:inLanguage\t\"" + siteLanguageCodes[sitekey] + "\"")
+				self.__addPO( "so:inLanguage", "\"" + siteLanguageCodes[sitekey] + "\"")
 			else:
 				logging.log( '*** Warning: Language code unknown for site "' + sitekey + '".'  )
-			self.output.write(" .\n")
+			self.__endTriples()
 
 		self.__writePropertyDeclarations()
 
 	def logReport(self):
 		## Dump collected types to update the cache at the end of this file (normally done only at the very end):
 		#self.__knownTypesReport()
-		logging.log('     * Turtle serialization (' + self.filterName + '): ' + str(self.entityCount) + ' entities, definitions for ' + str(self.propertyCount) + ' properties (looked up ' + str(self.propertyLookupCount) + ' types online).')
+		logging.log('     * Turtle serialization (' + self.filterName + '): serialized ' + str(self.statTripleCount) + ' triples, looked up ' + str(self.propertyLookupCount) + ' property types online ...')
+		logging.log('     * ... ' + str(self.entityCount) + ' entities, ' + str(self.propertyCount) + ' additional OWL property declarations, ' + str(self.statStatementCount) + ' statements, ' + str(self.statReferenceCount) + ' references ...')
+		if self.dataFilter.includeStatements():
+			logging.log('     * ... statement types: ' + str(self.statStmtTypeCounts))
+			logging.log('     * ... qualifier types: ' + str(self.statQualiTypeCounts))
+			logging.log('     * ... reference types: ' + str(self.statRefTypeCounts) + ' (counting each reference only once per item)')
+		## Debug:
+		#self.close()
+		#exit()
 
 	# Create a report about known property types if any had
 	# to be looked up online.
@@ -164,8 +184,41 @@ class EPTurtleFile(entityprocessor.EntityProcessor):
 			logging.log( '\n}' )
 			logging.log('\n\n\n')
 
+	def __addStatisticsComments(self):
+		self.output.write('\n\n### Turtle seliarlization completed:\n# * ' +
+			str(self.statTripleCount) + ' triples\n# * ' +
+			str(self.entityCount) + ' entities\n# * ' +
+			str(self.propertyCount) + ' additional OWL property declarations\n# * ' +
+			str(self.statStatementCount) + ' statements\n# * ' +
+			str(self.statReferenceCount) + ' references\n# * types of main properties: ' +
+			str(self.statStmtTypeCounts) + '\n# * types of qualifier properties: ' +
+			str(self.statQualiTypeCounts) + '\n# * types of reference properties: ' +
+			str(self.statRefTypeCounts) + '\n')
+
+		if self.dataFilter.includeStatements():
+			self.output.write('###\n### The following is a CSV compatible list with property statistics:\n' +
+				'### (Values for references refer to how often a value for a certain Wikidata\n' +
+				'### property was included in the RDF export. It may occur more often if\n' +
+				'### several statements of an item use the same reference -- a common case.)\n###\n' +
+				'#,property id,type,use as main property,use in qualifiers,use in references\n')
+			for p in sorted(self.statStmtPropertyCounts, key=self.statStmtPropertyCounts.get, reverse=True):
+				self.output.write( '#,' + str(p) + ',' + self.__getPropertyType('P' + str(p)) + ',' + str(self.statStmtPropertyCounts[p]) )
+				if p in self.statQualiPropertyCounts:
+					self.output.write( ',' + str(self.statQualiPropertyCounts[p]) )
+				else:
+					self.output.write( ',0' )
+				if p in self.statRefPropertyCounts:
+					self.output.write( ',' + str(self.statRefPropertyCounts[p]) )
+				else:
+					self.output.write( ',0' )
+				self.output.write( '\n' )
+			self.output.write('###END###\n')
+
+		self.output.write('###\n')
+
 	def close(self):
-		self.output.write("\n\n ### Export completed successfully. The End. ###")
+		self.__addStatisticsComments()
+		self.output.write("\n\n### Export completed successfully. The End. ###")
 		self.__knownTypesReport()
 		self.output.close()
 
@@ -217,17 +270,17 @@ class EPTurtleFile(entityprocessor.EntityProcessor):
 
 	def __writePropertyDeclarations(self):
 		for propertyTitle in self.propertyDeclarationQueue:
-			self.output.write( '\nw:' + propertyTitle + "s\ta\to:ObjectProperty ." )
+			self.__writeTriple( 'w:' + propertyTitle + "s", "a", "o:ObjectProperty" )
 			if self.__getPropertyRange(propertyTitle) == 'o:Thing':
-				self.output.write( '\nw:' + propertyTitle + "v\ta\to:ObjectProperty ." )
-				self.output.write( '\nw:' + propertyTitle + "r\ta\to:ObjectProperty ." )
-				self.output.write( '\nw:' + propertyTitle + "q\ta\to:ObjectProperty ." )
+				self.__writeTriple( 'w:' + propertyTitle + "v", "a", "o:ObjectProperty" )
+				self.__writeTriple( 'w:' + propertyTitle + "r", "a", "o:ObjectProperty" )
+				self.__writeTriple( 'w:' + propertyTitle + "q", "a", "o:ObjectProperty" )
 			else:
-				self.output.write( '\nw:' + propertyTitle + "v\ta\to:DatatypeProperty ." )
-				self.output.write( '\nw:' + propertyTitle + "r\ta\to:DatatypeProperty ." )
-				self.output.write( '\nw:' + propertyTitle + "q\ta\to:DatatypeProperty ." )
+				self.__writeTriple( 'w:' + propertyTitle + "v", "a", "o:DatatypeProperty" )
+				self.__writeTriple( 'w:' + propertyTitle + "r", "a", "o:DatatypeProperty" )
+				self.__writeTriple( 'w:' + propertyTitle + "q", "a", "o:DatatypeProperty" )
 			self.output.write( '\n' )
-			self.propertyCount += 1
+			self.propertyCount += 4
 
 		self.propertyDeclarationQueue = []
 
@@ -264,9 +317,10 @@ class EPTurtleFile(entityprocessor.EntityProcessor):
 			yearnum = int(wikidataTime[:12])
 			month = wikidataTime[13:15]
 			day = wikidataTime[16:18]
-		except ValueError: # some rare values seem to have other year lengths
+		except ValueError: # some rare values have broken formats
 			logging.log("*** Warning: unexpected date format '" + wikidataTime + "'.")
-			return '"' + wikidataTime + '"^^x:dateTime' # let's hope this works
+			#return '"' + wikidataTime + '"^^x:dateTime' # < not valid in some old dumps
+			return '"2007-05-12T10:30:42Z"^^x:dateTime' # use an arbitrary but valid time; should be very rare (only in old dumps)
 
 		# Wikidata encodes the year 1BCE as 0000, while XML Schema, even in
 		# version 2, does not allow 0000 and interprets -0001 as 1BCE. Thus
@@ -295,24 +349,22 @@ class EPTurtleFile(entityprocessor.EntityProcessor):
 		for lang in literals.keys():
 			if lang not in langCodes or not self.dataFilter.includeLanguage(lang):
 				continue
-			if valueList and literals[lang] == []: # deal with https://bugzilla.wikimedia.org/show_bug.cgi?id=44717
-				continue
-			if first:
-				self.output.write( " ;\n\t" + prop + "\t")
-				first = False
-			else:
-				self.output.write(',')
+			#if valueList and literals[lang] == []: # deal with https://bugzilla.wikimedia.org/show_bug.cgi?id=44717
+				#continue
 
 			if valueList:
-				firstLiteral = True
 				for literal in literals[lang]:
-					if firstLiteral:
-						firstLiteral = False
+					if first:
+						first = False
+						self.__addPO(prop, self.__encodeStringLiteral(literal, lang))
 					else:
-						self.output.write(',')
-					self.output.write( self.__encodeStringLiteral(literal, lang) )
+						self.__addO( self.__encodeStringLiteral(literal, lang) )
 			else:
-				self.output.write( self.__encodeStringLiteral(literals[lang], lang) )
+				if first:
+					first = False
+					self.__addPO(prop, self.__encodeStringLiteral(literals[lang], lang))
+				else:
+					self.__addO( self.__encodeStringLiteral(literals[lang], lang) )
 
 	# Find the datatype of the main snak of a statement.
 	def __getStatementDatatype(self,statement):
@@ -331,21 +383,23 @@ class EPTurtleFile(entityprocessor.EntityProcessor):
 
 	# Write the data for one statement.
 	def __writeStatementData(self,statement):
+		self.statStatementCount += 1
 		self.valuesGC = {} # collect coordinates values and export them after each statement
 		self.valuesTI = {} # collect time values and export them after each statement
 
-		self.output.write( '\nw:' + statement['localname'] + "\n\ta\two:Statement" )
-		self.__writeSnakData("w:P" + str(statement['m'][1]) + 'v', statement['m'])
+		self.__startTriples( 'w:' + statement['localname'], "a", "wo:Statement" )
+		self.__writeSnakData('v', statement['m'])
 		for q in statement['q']:
-			self.__writeSnakData("w:P" + str(q[1]) + 'q', q)
+			self.__writeSnakData('q', q)
 
 		if self.dataFilter.includeReferences():
 			for ref in statement['refs']:
 				key = "R" + self.__getHashForLocalName(ref)
 				self.refs[key] = ref
-				self.output.write( " ;\n\tpv:wasDerivedFrom\tw:" + key )
+				self.__addPO( "pv:wasDerivedFrom", "w:" + key )
+				self.statReferenceCount += 1
 
-		self.output.write(" .\n")
+		self.__endTriples()
 
 		# Export times
 		for key in self.valuesTI.keys():
@@ -361,55 +415,60 @@ class EPTurtleFile(entityprocessor.EntityProcessor):
 		# TODO Timezone not exported yet. The timezone support should
 		# be similar to calendar model support (all dates are UTC, but
 		# there can be a "preferred timezone for display")
-		self.output.write( '\nw:' + localname + "\n\ta\two:TimeValue" )
-		self.output.write( " ;\n\two:time\t" + self.__encodeTimeLiteral(value['time'],value['precision']) )
-		self.output.write( " ;\n\two:timePrecision\t" + self.__encodeIntegerLiteral(value['precision']) )
+		self.__startTriples( 'w:' + localname, "a", "wo:TimeValue" )
+		self.__addPO( "wo:time", self.__encodeTimeLiteral(value['time'],value['precision']) )
+		self.__addPO( "wo:timePrecision", self.__encodeIntegerLiteral(value['precision']) )
 		## TODO Currently unused -- do not export yet.
-		#self.output.write( " ;\n\two:timePrecisionBefore\t" + self.__encodeIntegerLiteral(value['before']) )
-		#self.output.write( " ;\n\two:timePrecisionAfter\t" + self.__encodeIntegerLiteral(value['after']) )
-		self.output.write( " ;\n\two:preferredCalendar\tw:" + value['calendarmodel'][35:] )
-		self.output.write(" .\n")
+		#self.__addPO( "wo:timePrecisionBefore", self.__encodeIntegerLiteral(value['before']) )
+		#self.__addPO( " wo:timePrecisionAfter", self.__encodeIntegerLiteral(value['after']) )
+		self.__addPO( "wo:preferredCalendar", "w:" + value['calendarmodel'][31:] )
+		self.__endTriples()
 
 	# Write the data for a coordinates datavalue with the given local name.
 	def __writeCoordinatesValue(self,localname,value):
-		self.output.write( '\nw:' + localname + "\n\ta\two:GlobeCoordinatesValue" )
-		self.output.write( " ;\n\two:latitude\t" + self.__encodeFloatLiteral(value['latitude']) )
-		self.output.write( " ;\n\two:longitude\t" + self.__encodeFloatLiteral(value['longitude']) )
+		self.__startTriples( 'w:' + localname, "a", "wo:GlobeCoordinatesValue" )
+		self.__addPO( "wo:latitude", self.__encodeFloatLiteral(value['latitude']) )
+		self.__addPO( "wo:longitude", self.__encodeFloatLiteral(value['longitude']) )
 		if value['altitude'] != None:
-			self.output.write( " ;\n\two:altitude\t" + self.__encodeFloatLiteral(value['altitude']) )
+			self.__addPO( "wo:altitude", self.__encodeFloatLiteral(value['altitude']) )
 		if value['precision'] != None:
-			self.output.write( " ;\n\two:gcPrecision\t" + self.__encodeFloatLiteral(value['precision']) )
+			self.__addPO( "wo:gcPrecision", self.__encodeFloatLiteral(value['precision']) )
 		if value['globe'] != None:
-			self.output.write( " ;\n\two:globe\tw:" + value['globe'][31:] )
-		self.output.write(" .\n")
+			try:
+				globeId = str(int(value['globe'][32:]))
+				self.__addPO( "wo:globe", "w:Q" + globeId )
+			except ValueError:
+				logging.log("*** Warning: illegal globe specification '" + value['globe'] + "'.")
+		self.__endTriples()
 
 	# Write the data for one snak. Since we use different variants of
-	# property URIs depending on context, the property URI is explicitly
-	# given rather than being derived from the snak.
-	def __writeSnakData(self,prop,snak):
+	# property URIs depending on context, the context is also given;
+	# it should be one of 'v' (main value), 'q' (qualifier), and 'r'
+	# (reference).
+	def __writeSnakData(self,snakContext,snak):
 		includeSnak = True
 		wbProperty = 'P' + str(snak[1]) # Not to be confused with prop
+		prop = "w:" + wbProperty + snakContext
+		datatype = None
 		if snak[0] == 'value' :
 			if snak[2] in datatypesByValueTypes:
 				datatype = self.__setPropertyType(wbProperty, datatypesByValueTypes[snak[2]])
-			else:
-				datatype = None
 
 			if self.dataFilter.includePropertyType(datatype):
 				if datatype == 'wikibase-item':
-					self.output.write( " ;\n\t" + prop + "\tw:Q" + str(snak[3]['numeric-id']) )
+					self.__addPO( prop, "w:Q" + str(snak[3]['numeric-id']) )
 				elif datatype == 'commonsMedia':
-					self.output.write( " ;\n\t" + prop + "\t<http://commons.wikimedia.org/wiki/File:" +  urllib.quote(snak[3].replace(' ','_').encode('utf-8')) + '>' )
+					self.__addPO( prop, "<http://commons.wikimedia.org/wiki/File:" +  urllib.quote(snak[3].replace(' ','_').encode('utf-8')) + '>' )
 				elif datatype == 'string':
-					self.output.write( " ;\n\t" + prop + "\t" + self.__encodeStringLiteral(snak[3]) )
+					self.__addPO( prop, self.__encodeStringLiteral(snak[3]) )
 				elif datatype == 'time' :
 					key = 'VT' + self.__getHashForLocalName(snak[3])
 					self.valuesTI[key] = snak[3]
-					self.output.write( " ;\n\t" + prop + "\tw:" + key )
+					self.__addPO( prop, "w:" + key )
 				elif datatype == 'globe-coordinate' :
 					key = 'VC' + self.__getHashForLocalName(snak[3])
 					self.valuesGC[key] = snak[3]
-					self.output.write( " ;\n\t" + prop + "\tw:" + key )
+					self.__addPO( prop, "w:" + key )
 				else :
 					logging.log('*** Warning: Unsupported value snak:\n' + str(snak) + '\nExport might be incomplete.\n')
 					includeSnak = False
@@ -419,7 +478,8 @@ class EPTurtleFile(entityprocessor.EntityProcessor):
 			datatype = self.__getPropertyType(wbProperty)
 			if self.dataFilter.includePropertyType(datatype):
 				propRange = self.__getPropertyRange(wbProperty)
-				self.output.write( " ;\n\ta\t[ a o:Restriction; o:onProperty " + prop + "; o:someValuesFrom " + propRange + " ]" )
+				self.__addPO( "a", "[ a o:Restriction; o:onProperty " + prop + "; o:someValuesFrom " + propRange + " ]" )
+				self.statTripleCount += 3
 			else:
 				includeSnak = False
 		elif snak[0] == 'novalue' :
@@ -427,10 +487,12 @@ class EPTurtleFile(entityprocessor.EntityProcessor):
 			if self.dataFilter.includePropertyType(datatype):
 				propRange = self.__getPropertyRange(wbProperty)
 				if propRange == 'o:Thing':
-					self.output.write( " ;\n\ta\t[ a o:Class; o:complementOf [ a o:Restriction; o:onProperty " + prop + "; o:someValuesFrom o:Thing ] ]" )
-					#self.output.write( " ;\n\ta\t[ a o:Restriction; o:onProperty " + prop + "; o:allValuesFrom o:Nothing ]" ) # < shorter, but less uniform compared to data case
+					self.__addPO( "a", "[ a o:Class; o:complementOf [ a o:Restriction; o:onProperty " + prop + "; o:someValuesFrom o:Thing ] ]" )
+					#self.__addPO( "a", "[ a o:Restriction; o:onProperty " + prop + "; o:allValuesFrom o:Nothing ]" ) # < shorter, but less uniform compared to data case
+					self.statTripleCount += 5
 				else:
-					self.output.write( " ;\n\ta\t[ a o:Class; o:complementOf [ a o:Restriction; o:onProperty " + prop + "; o:someValuesFrom rs:Literal ] ]" )
+					self.__addPO( "a", "[ a o:Class; o:complementOf [ a o:Restriction; o:onProperty " + prop + "; o:someValuesFrom rs:Literal ] ]" )
+					self.statTripleCount += 5
 			else:
 				includeSnak = False
 		else :
@@ -438,10 +500,56 @@ class EPTurtleFile(entityprocessor.EntityProcessor):
 			includeSnak = False
 
 		if not includeSnak:
-			self.output.write( " ;\n\ta\two:IncompletelyExported" )
+			self.__addPO( "a", "wo:IncompletelyExported" )
+		else:
+			if snakContext == 'v':
+				statPropertyCounts = self.statStmtPropertyCounts
+				statTypeCounts = self.statStmtTypeCounts
+			elif snakContext == 'q':
+				statPropertyCounts = self.statQualiPropertyCounts
+				statTypeCounts = self.statQualiTypeCounts
+			else: #  snakContext == 'r'
+				statPropertyCounts = self.statRefPropertyCounts
+				statTypeCounts = self.statRefTypeCounts
+
+			if snak[1] in statPropertyCounts:
+				statPropertyCounts[snak[1]] += 1
+			else:
+				statPropertyCounts[snak[1]] = 1
+			if datatype != None and datatype in statTypeCounts:
+				statTypeCounts[datatype] += 1
+			else:
+				statTypeCounts[datatype] = 1
+			# Also make sure that all properties occur in the statement statistics for later printout:
+			if not snak[1] in self.statStmtPropertyCounts:
+				self.statStmtPropertyCounts[snak[1]] = 0
 
 	def __getHashForLocalName(self, obj):
 		return '{0:x}'.format(abs(hash(str(obj))))
+
+	# Write a single, complete triple on one line
+	def __writeTriple(self,s,p,o):
+		self.output.write( "\n" + s + "\t" + p + "\t" + o + " ." )
+		self.statTripleCount += 1
+
+	# Start a new block of triples. It needs to be closed with
+	# __endTriples().
+	def __startTriples(self,s,p,o):
+		self.output.write( "\n" + s + "\n\t" + p + "\t" + o )
+
+	# Add another p-o to a previously started triple block.
+	def __addPO(self,p,o):
+		self.output.write( " ;\n\t" + p + "\t" + o )
+		self.statTripleCount += 1
+
+	# Add another o to a previously started triple block.
+	def __addO(self,o):
+		self.output.write( "," + o)
+		self.statTripleCount += 1
+
+	# Close a previously started triple block.
+	def __endTriples(self):
+		self.output.write(" .\n")
 
 # Wikidata datatypes for which the OWL value property
 # is an ObjectProperty (rather than a DatatypeProperty).
@@ -1256,10 +1364,20 @@ knownPropertyTypes = {
 	'P724' : 'string', 'P725' : 'wikibase-item', 'P726' : 'wikibase-item', 'P727' : 'string',
 	'P728' : 'string', 'P729' : 'time', 'P730' : 'time', 'P731' : 'string',
 	'P732' : 'string', 'P733' : 'string', 'P734' : 'wikibase-item', 'P735' : 'wikibase-item',
-	'P74' : 'wikibase-item', 'P75' : 'wikibase-item', 'P76' : 'wikibase-item', 'P77' : 'wikibase-item',
-	'P78' : 'wikibase-item', 'P81' : 'wikibase-item', 'P84' : 'wikibase-item', 'P85' : 'wikibase-item',
-	'P86' : 'wikibase-item', 'P87' : 'wikibase-item', 'P88' : 'wikibase-item', 'P89' : 'wikibase-item',
-	'P9' : 'wikibase-item', 'P91' : 'wikibase-item', 'P92' : 'wikibase-item', 'P94' : 'commonsMedia',
-	'P97' : 'wikibase-item', 'P98' : 'wikibase-item'
+	'P736' : 'wikibase-item', 'P737' : 'wikibase-item', 'P738' : 'wikibase-item', 'P739' : 'wikibase-item',
+	'P74' : 'wikibase-item', 'P740' : 'wikibase-item', 'P741' : 'wikibase-item', 'P742' : 'string',
+	'P743' : 'string', 'P744' : 'wikibase-item', 'P745' : 'string', 'P746' : 'time',
+	'P747' : 'wikibase-item', 'P748' : 'wikibase-item', 'P749' : 'wikibase-item', 'P75' : 'wikibase-item',
+	'P750' : 'wikibase-item', 'P751' : 'wikibase-item', 'P756' : 'wikibase-item', 'P757' : 'string',
+	'P758' : 'string', 'P759' : 'string', 'P76' : 'wikibase-item', 'P760' : 'string',
+	'P761' : 'string', 'P762' : 'string', 'P763' : 'string', 'P764' : 'string',
+	'P765' : 'wikibase-item', 'P766' : 'wikibase-item', 'P767' : 'wikibase-item', 'P768' : 'wikibase-item',
+	'P769' : 'wikibase-item', 'P77' : 'wikibase-item', 'P770' : 'wikibase-item', 'P771' : 'string',
+	'P772' : 'string', 'P773' : 'string', 'P774' : 'string', 'P775' : 'string',
+	'P776' : 'string', 'P777' : 'string', 'P778' : 'string', 'P779' : 'string',
+	'P78' : 'wikibase-item', 'P780' : 'wikibase-item', 'P781' : 'string', 'P782' : 'string',
+	'P81' : 'wikibase-item', 'P84' : 'wikibase-item', 'P85' : 'wikibase-item', 'P86' : 'wikibase-item',
+	'P87' : 'wikibase-item', 'P88' : 'wikibase-item', 'P89' : 'wikibase-item', 'P9' : 'wikibase-item',
+	'P91' : 'wikibase-item', 'P92' : 'wikibase-item', 'P94' : 'commonsMedia', 'P97' : 'wikibase-item',
+	'P98' : 'wikibase-item'
 }
-
