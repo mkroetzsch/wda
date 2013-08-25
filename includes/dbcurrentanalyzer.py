@@ -1,5 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+from bitarray import bitarray
+from includes import processinghelper, database
+
 
 class DBCurrentAnalyzer:
 
