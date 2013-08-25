@@ -8,3 +8,4 @@ Several scripts to analyse Wikidata dumps.
 
 * Python 2.7
 * python-bitarray
+* python-mysqldb
