@@ -4,7 +4,7 @@
 import database
 import processinghelper
 import logging
-import os,time,sys
+import time
 import bitarray
 
 # Class to analyse previously created database contents for historic
