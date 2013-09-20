@@ -17,6 +17,7 @@ def snaktotext(snak) :
 			return 'P' + str(snak[1]) + ' ' + str(snak[3])
 		else :
 			print snak
+			return 'P' + str(snak[1]) + ' *'
 			exit()
 	elif snak[0] == 'somevalue' :
 		return 'P' + str(snak[1]) + ' +'
@@ -24,18 +25,20 @@ def snaktotext(snak) :
 		return 'P' + str(snak[1]) + ' -'
 	else :
 		print snak
+		return 'P' + str(snak[1]) + ' *'
 		exit()
 
 # Based on the latest version of a page write out the 
 # Knowledge Base file to kb.txt
 class RPKB(revisionprocessor.RevisionProcessor):
-	def __init__(self,helper,output):
+	def __init__(self,helper,output,maxdate=''):
 		self.helper = helper
 		self.output = output
 		self.curMaxRev = -1
 		self.curMaxTimestamp = False
 		self.curMaxRawContent = False
 		self.curRevsFound = 0
+		self.maxDate = maxdate
 
 		self.descSize = 0
 		self.claimSize = 0
@@ -50,10 +53,11 @@ class RPKB(revisionprocessor.RevisionProcessor):
 		self.curMaxRawContent = False
 
 	def processRevision(self,revId,timestamp,user,isIp,rawContent):
-		if self.isNew and self.curMaxRev < int(revId):
-			self.curMaxRev = int(revId)
-			self.curMaxTimestamp = timestamp
-			self.curMaxRawContent = rawContent
+		if self.isNew and self.curMaxRev < int(revId) :
+			if self.maxDate == '' or self.maxDate > timestamp:
+				self.curMaxRev = int(revId)
+				self.curMaxTimestamp = timestamp
+				self.curMaxRawContent = rawContent
 
 	def endPageBlock(self):
 		if self.curMaxRev >= 0:
@@ -87,20 +91,20 @@ class RPKB(revisionprocessor.RevisionProcessor):
 		if 'label' in val :
 			if len(val['label']) > 0 :
 				for lang in val['label'].keys() :
-					self.output.write(title + ' label {' + lang + ':' + val['label'][lang] + "} .\n")
+					self.output.write(u'' + title + ' label {' + lang + ':' + val['label'][lang] + "} .\n")
 		if 'description' in val:
 			if len(val['description']) > 0 :
 				for lang in val['description'].keys() :
-					self.output.write(title + ' description {' + lang + ':' + val['description'][lang] + "} .\n")
+					self.output.write(u'' + title + ' description {' + lang + ':' + val['description'][lang] + "} .\n")
 		if 'links' in val :
 			if len(val['links']) > 0 :
 				for lang in val['links'].keys() :
-					self.output.write(title + ' link {' + lang + ':' + val['links'][lang] + "} .\n")
+					self.output.write(u'' + title + ' link {' + lang + ':' + val['links'][lang] + "} .\n")
 		if 'aliases' in val :
 			if len(val['aliases']) > 0 :
 				for lang in val['aliases'].keys() :
 					for alias in val['aliases'][lang] :
-						self.output.write(title + ' alias {' + lang + ':' + alias + "} .\n")
+						self.output.write(u'' + title + ' alias {' + lang + ':' + alias + "} .\n")
 		if 'claims' in val :
 			if len(val['claims']) > 0 :
 				for claim in val['claims'] :
@@ -118,7 +122,7 @@ class RPKB(revisionprocessor.RevisionProcessor):
 						quals = " (\n" + quals + ' )'
 							
 					snak = snaktotext(claim['m'])
-					self.output.write(title + ' ' + snak + quals + " .\n")
+					self.output.write(u'' + title + ' ' + snak + quals + " .\n")
 
 	# Truncate values of some keys in a dictionary to save space
 	def __reduceDictionary(self,data,preserveKeys):

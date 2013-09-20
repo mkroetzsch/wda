@@ -16,6 +16,7 @@ import includes.rpedits as rpedit
 import includes.rpkb as rpkb
 import os
 import gzip
+import io
 
 # Define which processing should happen on the data:
 dp = processdump.DumpProcessor()
@@ -24,7 +25,7 @@ ph = processinghelper.ProcessingHelper() # Collects common helper functions for 
 dp.registerProcessor(revisionprocessor.RPStats()) # Gather basic statistics
 rpedcount = rpedit.RPEditCount(ph) # Count edits by day and edits by user
 dp.registerProcessor(rpedcount)
-output = gzip.open('kb.txt.gz', 'w')
+output = io.open('kb.txt', 'w', encoding='utf-8')
 kbwriter = rpkb.RPKB(ph,output)
 dp.registerProcessor(kbwriter)
 #dp.registerProcessor(revisionprocessor.RPDebugLogger()) # Only for debugging
@@ -44,7 +45,7 @@ if not os.path.exists('results') :
 	os.makedirs('results')
 
 curdate = df.getLatestDate()
-output.write('# ' + curdate + "\n")
+output.write(u'# ' + curdate + "\n")
 edits = open('results/edits-' + curdate + '.csv', 'w')
 rpedcount.writeResults(edits)
 edits.close()
