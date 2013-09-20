@@ -99,7 +99,15 @@ class RPKB(revisionprocessor.RevisionProcessor):
 		if 'links' in val :
 			if len(val['links']) > 0 :
 				for lang in val['links'].keys() :
-					self.output.write(u'' + title + ' link {' + lang + ':' + val['links'][lang]['name'] + "} .\n")
+					#print title
+					#print lang
+					#print val['links'][lang]
+					if type(val['links'][lang]) is dict :
+						name = val['links'][lang]['name']
+					else :
+						name = val['links'][lang]
+					#print name
+					self.output.write(u'' + title + ' link {' + lang + ':' + name + "} .\n")
 		if 'aliases' in val :
 			if len(val['aliases']) > 0 :
 				for lang in val['aliases'].keys() :
