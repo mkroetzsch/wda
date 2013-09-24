@@ -217,7 +217,7 @@ class DataFetcher:
 				urllib.urlretrieve('http://dumps.wikimedia.org/other/incr/wikidatawiki/' + daily + '/maxrevid.txt', 'maxrevid.txt')
 			dailymaxrevid = int(open('maxrevid.txt').read())
 
-			if dailymaxrevid < self.maxrevid :
+			if daily < self.getLatestDumpDate() :
 				logging.log('already in latest ' + self.dumpName)
 				self.stopdaily = daily
 				os.chdir('..')
