@@ -136,7 +136,7 @@ class DumpProcessor:
 			# Title of current page
 			elif line.startswith('    <title>'):
 				title = line[11:-9]
-				isItem = title.startswith('Q')
+				isItem = title.startswith('Q') and not title.startswith('Qu')
 				if isItem:
 					title = line[11:-9]
 					isProperty = False
