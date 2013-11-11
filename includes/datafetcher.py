@@ -214,8 +214,16 @@ class DataFetcher:
 				continue
 
 			if not os.path.exists('maxrevid.txt') :
-				urllib.urlretrieve('http://dumps.wikimedia.org/other/incr/wikidatawiki/' + daily + '/maxrevid.txt', 'maxrevid.txt')
-			dailymaxrevid = int(open('maxrevid.txt').read())
+				maxrevSource = 'http://dumps.wikimedia.org/other/incr/wikidatawiki/' + daily + '/maxrevid.txt'
+				urllib.urlretrieve(retrieve, 'maxrevid.txt')
+			else:
+				maxrevSource = 'Local Max Rev File'
+			
+			try:
+				dailymaxrevid = int(open('maxrevid.txt').read())
+			except ValueError:
+				#This happens if a daily dump failed?
+				logging.log(maxrevSource + ' throws ValueError')
 
 			if daily < self.getLatestDumpDate() :
 				logging.log('already in latest ' + self.dumpName)
