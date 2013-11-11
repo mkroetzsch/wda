@@ -3,7 +3,6 @@
 
 import logging
 import revisionprocessor
-import json
 
 def snaktotext(snak) :
 	if snak[0] == 'value' :

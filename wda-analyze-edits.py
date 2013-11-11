@@ -10,7 +10,6 @@
 import includes.datafetcher as datafetcher
 import includes.processdump as processdump
 import includes.processinghelper as processinghelper
-import includes.logging as logging
 import includes.revisionprocessor as revisionprocessor
 import includes.rpedits as rpedit
 import os
