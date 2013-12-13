@@ -19,7 +19,7 @@ class DumpProcessor:
 		self.processeditems.setall(0)
 		self.processedrevisions = bitarray.bitarray(2**28) # about 250 M revisions
 		self.processedrevisions.setall(0)
-		self.processedproperties = bitarray.bitarray(2**10) # about 1 K properties
+		self.processedproperties = bitarray.bitarray(2**16) # up to 65 K properties
 		self.processedproperties.setall(0)
 		self.linecount = 0
 		self.pagecount = 0
