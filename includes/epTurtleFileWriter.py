@@ -133,7 +133,9 @@ class EPTurtleFile(entityprocessor.EntityProcessor):
 		for sitekey in data['links'].keys() :
 			if not self.dataFilter.includeSite(sitekey):
 				continue
-			if sitekey[-10:] == 'wikivoyage':
+			if sitekey == 'commonswiki':
+				urlPrefix = 'http://commons.wikimedia.org/wiki/'
+			elif sitekey[-10:] == 'wikivoyage':
 				urlPrefix = 'http://' + sitekey[:-10].replace('_','-') + '.wikivoyage.org/wiki/'
 			elif sitekey[-4:] == 'wiki':
 				urlPrefix = 'http://' + sitekey[:-4].replace('_','-') + '.wikipedia.org/wiki/'
@@ -141,11 +143,17 @@ class EPTurtleFile(entityprocessor.EntityProcessor):
 				logging.log("*** Warning: the following sitekey was not understood: " + sitekey)
 				continue
 
-			articletitle = data['links'][sitekey].replace(' ','_').encode('utf-8')
+			if isinstance(data['links'][sitekey], str): # Old format (name string)
+				articletitle = data['links'][sitekey].replace(' ','_').encode('utf-8')
+			else: # New format (dict with 'name' (string) and 'badges' (dict))
+				articletitle = data['links'][sitekey]['name'].replace(' ','_').encode('utf-8')
+
 			self.__startTriples( "<" + urlPrefix + urllib.quote(articletitle) + ">", "a", "so:Article" )
 			self.__addPO( "so:about", "w:" + title )
 			if sitekey in siteLanguageCodes:
 				self.__addPO( "so:inLanguage", "\"" + siteLanguageCodes[sitekey] + "\"")
+			elif sitekey == 'commonswiki': # Commons has no uniform language; do not export
+				pass
 			else:
 				logging.log( '*** Warning: Language code unknown for site "' + sitekey + '".'  )
 			self.__endTriples()
@@ -235,15 +243,14 @@ class EPTurtleFile(entityprocessor.EntityProcessor):
 		if propertyTitle in knownPropertyTypes:
 			return knownPropertyTypes[propertyTitle]
 
-		lowTitle = 'p' + propertyTitle[1:]
 		logging.logMore('Fetching current datatype of property ' + propertyTitle + ' from wikidata.org ... ' )
 		self.propertyLookupCount += 1
-		for line in urllib.urlopen('http://www.wikidata.org/w/api.php?action=wbgetentities&ids=' + lowTitle + '&props=datatype&format=json'):
+		for line in urllib.urlopen('http://www.wikidata.org/w/api.php?action=wbgetentities&ids=' + propertyTitle + '&props=datatype&format=json'):
 			data = eval(line)
-			if 'entities' in data and lowTitle in data['entities'] and 'datatype' in data['entities'][lowTitle]:
-				logging.log('found type ' + data['entities'][lowTitle]['datatype'])
-				knownPropertyTypes[propertyTitle] = data['entities'][lowTitle]['datatype'] # share with all instances of this class
-				return data['entities'][lowTitle]['datatype']
+			if 'entities' in data and propertyTitle in data['entities'] and 'datatype' in data['entities'][propertyTitle]:
+				logging.log('found type ' + data['entities'][propertyTitle]['datatype'])
+				knownPropertyTypes[propertyTitle] = data['entities'][propertyTitle]['datatype'] # share with all instances of this class
+				return data['entities'][propertyTitle]['datatype']
 
 		logging.log('error')
 		logging.log('*** Could not find the datatype for property ' + propertyTitle + ' online. Export might be erroneous.')
@@ -313,14 +320,23 @@ class EPTurtleFile(entityprocessor.EntityProcessor):
 		# The meaning of precision is:
 		# 11: day, 10: month, 9: year, 8: decade, ..., 0: 10^9 years
 
+		yearLength = 0
 		try:
 			yearnum = int(wikidataTime[:12])
 			month = wikidataTime[13:15]
 			day = wikidataTime[16:18]
-		except ValueError: # some rare values have broken formats
-			logging.log("*** Warning: unexpected date format '" + wikidataTime + "'.")
-			#return '"' + wikidataTime + '"^^x:dateTime' # < not valid in some old dumps
-			return '"2007-05-12T10:30:42Z"^^x:dateTime' # use an arbitrary but valid time; should be very rare (only in old dumps)
+		except ValueError: # some rare values have different length for the year string; try again
+			yearLength = wikidataTime.find('-',1)
+
+		if yearLength > 0:
+			try:
+				yearnum = int(wikidataTime[:yearLength])
+				month = wikidataTime[yearLength+1:yearLength+3]
+				day = wikidataTime[yearLength+4:yearLength+6]
+			except ValueError: # some rare values have broken formats
+				logging.log("*** Warning: unexpected date format '" + wikidataTime + "'." + str(yearLength))
+				#return '"' + wikidataTime + '"^^x:dateTime' # < not valid in some old dumps
+				return '"2007-05-12T10:30:42Z"^^x:dateTime' # use an arbitrary but valid time; should be very rare (only in old dumps)
 
 		# Wikidata encodes the year 1BCE as 0000, while XML Schema, even in
 		# version 2, does not allow 0000 and interprets -0001 as 1BCE. Thus
@@ -461,6 +477,8 @@ class EPTurtleFile(entityprocessor.EntityProcessor):
 					self.__addPO( prop, "<http://commons.wikimedia.org/wiki/File:" +  urllib.quote(snak[3].replace(' ','_').encode('utf-8')) + '>' )
 				elif datatype == 'string':
 					self.__addPO( prop, self.__encodeStringLiteral(snak[3]) )
+				elif datatype == 'url':
+					self.__addPO( prop, '<' +  urllib.quote(snak[3].encode('utf-8')) + '>' )
 				elif datatype == 'time' :
 					key = 'VT' + self.__getHashForLocalName(snak[3])
 					self.valuesTI[key] = snak[3]
@@ -469,8 +487,11 @@ class EPTurtleFile(entityprocessor.EntityProcessor):
 					key = 'VC' + self.__getHashForLocalName(snak[3])
 					self.valuesGC[key] = snak[3]
 					self.__addPO( prop, "w:" + key )
+				elif datatype == None :
+					logging.log('*** Warning: Could not find type for snak "' + str(snak) + '". Export will be incomplete.\n')
+					includeSnak = False
 				else :
-					logging.log('*** Warning: Unsupported value snak:\n' + str(snak) + '\nExport might be incomplete.\n')
+					logging.log('*** Warning: Unsupported value snak of type "' + str(datatype) + '":\n' + str(snak) + '\nExport might be incomplete.\n')
 					includeSnak = False
 			else:
 				includeSnak = False
@@ -557,6 +578,7 @@ owlPropertyRanges = {
 	'wikibase-item': 'o:Thing',
 	'string': 'x:string',
 	'time': 'o:Thing',
+	'url': 'o:Thing',
 	'globe-coordinate': 'o:Thing',
 	'commonsMedia': 'o:Thing',
 	None : 'o:Thing' # fallback (happens if missing property type cannot be fetched online)
@@ -1192,6 +1214,7 @@ siteLanguageCodes = {
 	'tumwiki' : 'tum',
 	'twwiki' : 'tw',
 	'tywiki' : 'ty',
+	'tyvwiki' : 'tyv',
 	'udmwiki' : 'udm',
 	'ugwiki' : 'ug',
 	'ukwiki' : 'uk',
@@ -1202,6 +1225,7 @@ siteLanguageCodes = {
 	'vepwiki' : 'vep',
 	'vewiki' : 've',
 	'viwiki' : 'vi',
+	'viwikivoyage' : 'vi',
 	'vlswiki' : 'vls',
 	'vowiki' : 'vo',
 	'warwiki' : 'war',
@@ -1228,156 +1252,162 @@ siteLanguageCodes = {
 # This list can be extended by any valid property type -- types
 # never change, so the information does not get outdated.
 knownPropertyTypes = {
-	'P10' : 'commonsMedia', 'P100' : 'wikibase-item', 'P101' : 'wikibase-item', 'P102' : 'wikibase-item',
-	'P103' : 'wikibase-item', 'P105' : 'wikibase-item', 'P106' : 'wikibase-item', 'P107' : 'wikibase-item',
-	'P108' : 'wikibase-item', 'P109' : 'commonsMedia', 'P110' : 'wikibase-item', 'P111' : 'wikibase-item',
-	'P112' : 'wikibase-item', 'P113' : 'wikibase-item', 'P114' : 'wikibase-item', 'P115' : 'wikibase-item',
-	'P117' : 'commonsMedia', 'P118' : 'wikibase-item', 'P119' : 'wikibase-item', 'P121' : 'wikibase-item',
-	'P122' : 'wikibase-item', 'P123' : 'wikibase-item', 'P126' : 'wikibase-item', 'P127' : 'wikibase-item',
-	'P128' : 'wikibase-item', 'P129' : 'wikibase-item', 'P131' : 'wikibase-item', 'P132' : 'wikibase-item',
-	'P133' : 'wikibase-item', 'P134' : 'wikibase-item', 'P135' : 'wikibase-item', 'P136' : 'wikibase-item',
-	'P137' : 'wikibase-item', 'P138' : 'wikibase-item', 'P14' : 'commonsMedia', 'P140' : 'wikibase-item',
-	'P141' : 'wikibase-item', 'P143' : 'wikibase-item', 'P144' : 'wikibase-item', 'P149' : 'wikibase-item',
-	'P15' : 'commonsMedia', 'P150' : 'wikibase-item', 'P154' : 'commonsMedia', 'P155' : 'wikibase-item',
-	'P156' : 'wikibase-item', 'P157' : 'wikibase-item', 'P158' : 'commonsMedia', 'P159' : 'wikibase-item',
-	'P16' : 'wikibase-item', 'P160' : 'wikibase-item', 'P161' : 'wikibase-item', 'P162' : 'wikibase-item',
-	'P163' : 'wikibase-item', 'P164' : 'wikibase-item', 'P166' : 'wikibase-item', 'P167' : 'wikibase-item',
-	'P168' : 'wikibase-item', 'P169' : 'wikibase-item', 'P17' : 'wikibase-item', 'P170' : 'wikibase-item',
-	'P171' : 'wikibase-item', 'P172' : 'wikibase-item', 'P173' : 'wikibase-item', 'P175' : 'wikibase-item',
-	'P176' : 'wikibase-item', 'P177' : 'wikibase-item', 'P178' : 'wikibase-item', 'P179' : 'wikibase-item',
-	'P18' : 'commonsMedia', 'P180' : 'wikibase-item', 'P181' : 'commonsMedia', 'P183' : 'wikibase-item',
-	'P184' : 'wikibase-item', 'P185' : 'wikibase-item', 'P186' : 'wikibase-item', 'P189' : 'wikibase-item',
-	'P19' : 'wikibase-item', 'P190' : 'wikibase-item', 'P193' : 'wikibase-item', 'P194' : 'wikibase-item',
-	'P195' : 'wikibase-item', 'P196' : 'wikibase-item', 'P197' : 'wikibase-item', 'P198' : 'wikibase-item',
-	'P199' : 'wikibase-item', 'P20' : 'wikibase-item', 'P200' : 'wikibase-item', 'P201' : 'wikibase-item',
-	'P202' : 'wikibase-item', 'P205' : 'wikibase-item', 'P206' : 'wikibase-item', 'P207' : 'commonsMedia',
-	'P208' : 'wikibase-item', 'P209' : 'wikibase-item', 'P21' : 'wikibase-item', 'P210' : 'wikibase-item',
-	'P212' : 'string', 'P213' : 'string', 'P214' : 'string', 'P215' : 'string',
-	'P217' : 'string', 'P218' : 'string', 'P219' : 'string', 'P22' : 'wikibase-item',
-	'P220' : 'string', 'P221' : 'string', 'P223' : 'string', 'P225' : 'string',
-	'P227' : 'string', 'P229' : 'string', 'P230' : 'string', 'P231' : 'string',
-	'P232' : 'string', 'P233' : 'string', 'P234' : 'string', 'P235' : 'string',
-	'P236' : 'string', 'P237' : 'wikibase-item', 'P238' : 'string', 'P239' : 'string',
-	'P240' : 'string', 'P241' : 'wikibase-item', 'P242' : 'commonsMedia', 'P243' : 'string',
-	'P244' : 'string', 'P245' : 'string', 'P246' : 'string', 'P247' : 'string',
-	'P248' : 'wikibase-item', 'P249' : 'string', 'P25' : 'wikibase-item', 'P26' : 'wikibase-item',
-	'P263' : 'wikibase-item', 'P264' : 'wikibase-item', 'P267' : 'string', 'P268' : 'string',
-	'P269' : 'string', 'P27' : 'wikibase-item', 'P270' : 'string', 'P271' : 'string',
-	'P272' : 'wikibase-item', 'P273' : 'wikibase-item', 'P274' : 'string', 'P275' : 'wikibase-item',
-	'P276' : 'wikibase-item', 'P277' : 'wikibase-item', 'P278' : 'string', 'P279' : 'wikibase-item',
-	'P281' : 'string', 'P282' : 'wikibase-item', 'P283' : 'wikibase-item', 'P284' : 'wikibase-item',
-	'P285' : 'wikibase-item', 'P286' : 'wikibase-item', 'P287' : 'wikibase-item', 'P288' : 'wikibase-item',
-	'P289' : 'wikibase-item', 'P291' : 'wikibase-item', 'P295' : 'wikibase-item', 'P296' : 'string',
-	'P297' : 'string', 'P298' : 'string', 'P299' : 'string', 'P30' : 'wikibase-item',
-	'P300' : 'string', 'P301' : 'wikibase-item', 'P302' : 'wikibase-item', 'P303' : 'string',
-	'P304' : 'string', 'P305' : 'string', 'P306' : 'wikibase-item', 'P31' : 'wikibase-item',
-	'P344' : 'wikibase-item', 'P345' : 'string', 'P347' : 'string', 'P348' : 'string',
-	'P349' : 'string', 'P35' : 'wikibase-item', 'P350' : 'string', 'P351' : 'string',
-	'P352' : 'string', 'P353' : 'string', 'P354' : 'string', 'P355' : 'wikibase-item',
-	'P356' : 'string', 'P357' : 'string', 'P358' : 'wikibase-item', 'P359' : 'string',
-	'P36' : 'wikibase-item', 'P360' : 'wikibase-item', 'P361' : 'wikibase-item', 'P364' : 'wikibase-item',
-	'P366' : 'wikibase-item', 'P367' : 'commonsMedia', 'P368' : 'commonsMedia', 'P369' : 'wikibase-item',
-	'P37' : 'wikibase-item', 'P370' : 'string', 'P371' : 'wikibase-item', 'P373' : 'string',
-	'P374' : 'string', 'P375' : 'wikibase-item', 'P376' : 'wikibase-item', 'P377' : 'string',
-	'P38' : 'wikibase-item', 'P380' : 'string', 'P381' : 'string', 'P382' : 'string',
-	'P387' : 'string', 'P39' : 'wikibase-item', 'P392' : 'string', 'P393' : 'string',
-	'P395' : 'string', 'P396' : 'string', 'P397' : 'wikibase-item', 'P398' : 'wikibase-item',
-	'P399' : 'wikibase-item', 'P40' : 'wikibase-item', 'P400' : 'wikibase-item', 'P402' : 'string',
-	'P403' : 'wikibase-item', 'P404' : 'wikibase-item', 'P405' : 'wikibase-item', 'P406' : 'wikibase-item',
-	'P407' : 'wikibase-item', 'P408' : 'wikibase-item', 'P409' : 'string', 'P41' : 'commonsMedia',
-	'P410' : 'wikibase-item', 'P411' : 'wikibase-item', 'P412' : 'wikibase-item', 'P413' : 'wikibase-item',
-	'P414' : 'wikibase-item', 'P415' : 'wikibase-item', 'P416' : 'string', 'P417' : 'wikibase-item',
-	'P418' : 'wikibase-item', 'P421' : 'wikibase-item', 'P423' : 'wikibase-item', 'P424' : 'string',
-	'P425' : 'wikibase-item', 'P426' : 'string', 'P427' : 'wikibase-item', 'P428' : 'string',
-	'P429' : 'string', 'P43' : 'wikibase-item', 'P432' : 'string', 'P433' : 'string',
-	'P434' : 'string', 'P435' : 'string', 'P436' : 'string', 'P437' : 'wikibase-item',
-	'P438' : 'string', 'P439' : 'string', 'P44' : 'wikibase-item', 'P440' : 'string',
-	'P442' : 'string', 'P443' : 'commonsMedia', 'P444' : 'string', 'P447' : 'wikibase-item',
-	'P448' : 'wikibase-item', 'P449' : 'wikibase-item', 'P45' : 'wikibase-item', 'P450' : 'wikibase-item',
-	'P451' : 'wikibase-item', 'P452' : 'wikibase-item', 'P453' : 'wikibase-item', 'P454' : 'string',
-	'P455' : 'string', 'P457' : 'wikibase-item', 'P458' : 'string', 'P459' : 'wikibase-item',
-	'P460' : 'wikibase-item', 'P461' : 'wikibase-item', 'P462' : 'wikibase-item', 'P463' : 'wikibase-item',
-	'P464' : 'string', 'P465' : 'string', 'P466' : 'wikibase-item', 'P467' : 'wikibase-item',
-	'P468' : 'wikibase-item', 'P469' : 'wikibase-item', 'P47' : 'wikibase-item', 'P470' : 'wikibase-item',
-	'P473' : 'string', 'P474' : 'string', 'P476' : 'string', 'P477' : 'string',
-	'P478' : 'string', 'P479' : 'wikibase-item', 'P480' : 'string', 'P481' : 'string',
-	'P483' : 'wikibase-item', 'P484' : 'string', 'P485' : 'wikibase-item', 'P486' : 'string',
-	'P487' : 'string', 'P488' : 'wikibase-item', 'P489' : 'wikibase-item', 'P490' : 'string',
-	'P491' : 'commonsMedia', 'P492' : 'string', 'P493' : 'string', 'P494' : 'string',
-	'P495' : 'wikibase-item', 'P496' : 'string', 'P497' : 'string', 'P498' : 'string',
-	'P50' : 'wikibase-item', 'P500' : 'wikibase-item', 'P501' : 'wikibase-item', 'P502' : 'string',
-	'P503' : 'string', 'P504' : 'wikibase-item', 'P505' : 'wikibase-item', 'P506' : 'string',
-	'P507' : 'string', 'P508' : 'string', 'P509' : 'wikibase-item', 'P51' : 'commonsMedia',
-	'P511' : 'wikibase-item', 'P512' : 'wikibase-item', 'P513' : 'string', 'P514' : 'wikibase-item',
-	'P515' : 'wikibase-item', 'P516' : 'wikibase-item', 'P517' : 'wikibase-item', 'P518' : 'wikibase-item',
-	'P520' : 'wikibase-item', 'P521' : 'wikibase-item', 'P522' : 'wikibase-item', 'P523' : 'wikibase-item',
-	'P524' : 'wikibase-item', 'P525' : 'string', 'P527' : 'wikibase-item', 'P528' : 'string',
-	'P529' : 'string', 'P53' : 'wikibase-item', 'P530' : 'wikibase-item', 'P531' : 'wikibase-item',
-	'P532' : 'wikibase-item', 'P533' : 'wikibase-item', 'P534' : 'wikibase-item', 'P535' : 'string',
-	'P536' : 'string', 'P537' : 'wikibase-item', 'P538' : 'wikibase-item', 'P539' : 'string',
-	'P54' : 'wikibase-item', 'P540' : 'wikibase-item', 'P541' : 'wikibase-item', 'P542' : 'wikibase-item',
-	'P543' : 'wikibase-item', 'P545' : 'wikibase-item', 'P546' : 'wikibase-item', 'P547' : 'wikibase-item',
-	'P548' : 'wikibase-item', 'P549' : 'string', 'P550' : 'wikibase-item', 'P551' : 'wikibase-item',
-	'P552' : 'wikibase-item', 'P553' : 'wikibase-item', 'P554' : 'string', 'P555' : 'string',
-	'P556' : 'wikibase-item', 'P557' : 'string', 'P558' : 'string', 'P559' : 'wikibase-item',
-	'P560' : 'wikibase-item', 'P561' : 'string', 'P562' : 'wikibase-item', 'P563' : 'string',
-	'P564' : 'string', 'P565' : 'wikibase-item', 'P566' : 'wikibase-item', 'P567' : 'wikibase-item',
-	'P568' : 'wikibase-item', 'P569' : 'time', 'P57' : 'wikibase-item', 'P570' : 'time',
-	'P571' : 'time', 'P574' : 'time', 'P575' : 'time', 'P576' : 'time',
-	'P577' : 'time', 'P578' : 'time', 'P579' : 'wikibase-item', 'P58' : 'wikibase-item',
-	'P580' : 'time', 'P582' : 'time', 'P585' : 'time', 'P586' : 'string',
-	'P587' : 'string', 'P588' : 'wikibase-item', 'P589' : 'wikibase-item', 'P59' : 'wikibase-item',
-	'P590' : 'string', 'P591' : 'string', 'P592' : 'string', 'P593' : 'string',
-	'P594' : 'string', 'P595' : 'string', 'P597' : 'string', 'P598' : 'wikibase-item',
-	'P599' : 'string', 'P6' : 'wikibase-item', 'P60' : 'wikibase-item', 'P600' : 'string',
-	'P604' : 'string', 'P605' : 'string', 'P606' : 'time', 'P607' : 'wikibase-item',
-	'P608' : 'wikibase-item', 'P609' : 'wikibase-item', 'P61' : 'wikibase-item', 'P610' : 'wikibase-item',
-	'P611' : 'wikibase-item', 'P612' : 'wikibase-item', 'P613' : 'string', 'P616' : 'string',
-	'P617' : 'string', 'P618' : 'wikibase-item', 'P619' : 'time', 'P620' : 'time',
-	'P621' : 'time', 'P622' : 'time', 'P623' : 'commonsMedia', 'P624' : 'wikibase-item',
-	'P625' : 'globe-coordinate', 'P626' : 'globe-coordinate', 'P627' : 'string', 'P628' : 'string',
-	'P629' : 'wikibase-item', 'P630' : 'string', 'P631' : 'wikibase-item', 'P632' : 'string',
-	'P633' : 'string', 'P634' : 'wikibase-item', 'P635' : 'string', 'P636' : 'wikibase-item',
-	'P637' : 'string', 'P638' : 'string', 'P639' : 'string', 'P640' : 'string',
-	'P641' : 'wikibase-item', 'P642' : 'wikibase-item', 'P643' : 'string', 'P644' : 'string',
-	'P645' : 'string', 'P646' : 'string', 'P647' : 'wikibase-item', 'P648' : 'string',
-	'P649' : 'string', 'P65' : 'wikibase-item', 'P650' : 'string', 'P651' : 'string',
-	'P652' : 'string', 'P653' : 'string', 'P654' : 'wikibase-item', 'P655' : 'wikibase-item',
-	'P656' : 'string', 'P657' : 'string', 'P658' : 'wikibase-item', 'P659' : 'wikibase-item',
-	'P66' : 'wikibase-item', 'P660' : 'wikibase-item', 'P661' : 'string', 'P662' : 'string',
-	'P663' : 'string', 'P664' : 'wikibase-item', 'P665' : 'string', 'P667' : 'string',
-	'P668' : 'string', 'P669' : 'wikibase-item', 'P670' : 'string', 'P671' : 'string',
-	'P672' : 'string', 'P673' : 'string', 'P674' : 'wikibase-item', 'P675' : 'string',
-	'P676' : 'wikibase-item', 'P677' : 'string', 'P678' : 'wikibase-item', 'P679' : 'string',
-	'P680' : 'wikibase-item', 'P681' : 'wikibase-item', 'P682' : 'wikibase-item', 'P683' : 'string',
-	'P684' : 'wikibase-item', 'P685' : 'string', 'P686' : 'string', 'P687' : 'string',
-	'P688' : 'wikibase-item', 'P689' : 'wikibase-item', 'P69' : 'wikibase-item', 'P690' : 'wikibase-item',
-	'P691' : 'string', 'P692' : 'commonsMedia', 'P693' : 'wikibase-item', 'P694' : 'wikibase-item',
-	'P695' : 'string', 'P696' : 'string', 'P697' : 'wikibase-item', 'P698' : 'string',
-	'P699' : 'string', 'P7' : 'wikibase-item', 'P70' : 'wikibase-item', 'P700' : 'string',
-	'P701' : 'string', 'P702' : 'wikibase-item', 'P703' : 'wikibase-item', 'P704' : 'string',
-	'P705' : 'string', 'P706' : 'wikibase-item', 'P707' : 'wikibase-item', 'P708' : 'wikibase-item',
-	'P709' : 'string', 'P71' : 'wikibase-item', 'P710' : 'wikibase-item', 'P711' : 'string',
-	'P712' : 'string', 'P713' : 'string', 'P714' : 'string', 'P715' : 'string',
-	'P716' : 'string', 'P717' : 'string', 'P718' : 'string', 'P719' : 'wikibase-item',
-	'P720' : 'wikibase-item', 'P721' : 'string', 'P722' : 'string', 'P723' : 'string',
-	'P724' : 'string', 'P725' : 'wikibase-item', 'P726' : 'wikibase-item', 'P727' : 'string',
-	'P728' : 'string', 'P729' : 'time', 'P730' : 'time', 'P731' : 'string',
-	'P732' : 'string', 'P733' : 'string', 'P734' : 'wikibase-item', 'P735' : 'wikibase-item',
-	'P736' : 'wikibase-item', 'P737' : 'wikibase-item', 'P738' : 'wikibase-item', 'P739' : 'wikibase-item',
-	'P74' : 'wikibase-item', 'P740' : 'wikibase-item', 'P741' : 'wikibase-item', 'P742' : 'string',
-	'P743' : 'string', 'P744' : 'wikibase-item', 'P745' : 'string', 'P746' : 'time',
-	'P747' : 'wikibase-item', 'P748' : 'wikibase-item', 'P749' : 'wikibase-item', 'P75' : 'wikibase-item',
-	'P750' : 'wikibase-item', 'P751' : 'wikibase-item', 'P756' : 'wikibase-item', 'P757' : 'string',
-	'P758' : 'string', 'P759' : 'string', 'P76' : 'wikibase-item', 'P760' : 'string',
-	'P761' : 'string', 'P762' : 'string', 'P763' : 'string', 'P764' : 'string',
-	'P765' : 'wikibase-item', 'P766' : 'wikibase-item', 'P767' : 'wikibase-item', 'P768' : 'wikibase-item',
-	'P769' : 'wikibase-item', 'P77' : 'wikibase-item', 'P770' : 'wikibase-item', 'P771' : 'string',
-	'P772' : 'string', 'P773' : 'string', 'P774' : 'string', 'P775' : 'string',
-	'P776' : 'string', 'P777' : 'string', 'P778' : 'string', 'P779' : 'string',
-	'P78' : 'wikibase-item', 'P780' : 'wikibase-item', 'P781' : 'string', 'P782' : 'string',
-	'P81' : 'wikibase-item', 'P84' : 'wikibase-item', 'P85' : 'wikibase-item', 'P86' : 'wikibase-item',
-	'P87' : 'wikibase-item', 'P88' : 'wikibase-item', 'P89' : 'wikibase-item', 'P9' : 'wikibase-item',
-	'P91' : 'wikibase-item', 'P92' : 'wikibase-item', 'P94' : 'commonsMedia', 'P97' : 'wikibase-item',
-	'P98' : 'wikibase-item'
+        'P10' : 'commonsMedia', 'P1001' : 'wikibase-item', 'P1002' : 'wikibase-item', 'P1003' : 'string',
+        'P1004' : 'string', 'P1005' : 'string', 'P1006' : 'string', 'P101' : 'wikibase-item',
+        'P1014' : 'string', 'P1015' : 'string', 'P1016' : 'wikibase-item', 'P1017' : 'string',
+        'P1018' : 'wikibase-item', 'P1019' : 'url', 'P102' : 'wikibase-item', 'P1027' : 'wikibase-item',
+        'P1029' : 'wikibase-item', 'P103' : 'wikibase-item', 'P1031' : 'string', 'P1036' : 'string',
+        'P1038' : 'wikibase-item', 'P1039' : 'wikibase-item', 'P1040' : 'wikibase-item', 'P1042' : 'string',
+        'P1044' : 'string', 'P1046' : 'wikibase-item', 'P1047' : 'string', 'P1048' : 'string',
+        'P1049' : 'wikibase-item', 'P105' : 'wikibase-item', 'P1050' : 'wikibase-item', 'P1052' : 'string',
+        'P106' : 'wikibase-item', 'P107' : 'wikibase-item', 'P108' : 'wikibase-item', 'P109' : 'commonsMedia',
+        'P110' : 'wikibase-item', 'P111' : 'wikibase-item', 'P112' : 'wikibase-item', 'P113' : 'wikibase-item',
+        'P114' : 'wikibase-item', 'P115' : 'wikibase-item', 'P117' : 'commonsMedia', 'P118' : 'wikibase-item',
+        'P119' : 'wikibase-item', 'P121' : 'wikibase-item', 'P122' : 'wikibase-item', 'P123' : 'wikibase-item',
+        'P126' : 'wikibase-item', 'P127' : 'wikibase-item', 'P128' : 'wikibase-item', 'P129' : 'wikibase-item',
+        'P131' : 'wikibase-item', 'P132' : 'wikibase-item', 'P133' : 'wikibase-item', 'P134' : 'wikibase-item',
+        'P135' : 'wikibase-item', 'P136' : 'wikibase-item', 'P137' : 'wikibase-item', 'P138' : 'wikibase-item',
+        'P14' : 'commonsMedia', 'P140' : 'wikibase-item', 'P141' : 'wikibase-item', 'P143' : 'wikibase-item',
+        'P144' : 'wikibase-item', 'P149' : 'wikibase-item', 'P15' : 'commonsMedia', 'P150' : 'wikibase-item',
+        'P154' : 'commonsMedia', 'P155' : 'wikibase-item', 'P156' : 'wikibase-item', 'P157' : 'wikibase-item',
+        'P158' : 'commonsMedia', 'P159' : 'wikibase-item', 'P16' : 'wikibase-item', 'P160' : 'wikibase-item',
+        'P161' : 'wikibase-item', 'P162' : 'wikibase-item', 'P163' : 'wikibase-item', 'P166' : 'wikibase-item',
+        'P168' : 'wikibase-item', 'P169' : 'wikibase-item', 'P17' : 'wikibase-item', 'P170' : 'wikibase-item',
+        'P171' : 'wikibase-item', 'P172' : 'wikibase-item', 'P173' : 'wikibase-item', 'P175' : 'wikibase-item',
+        'P176' : 'wikibase-item', 'P177' : 'wikibase-item', 'P178' : 'wikibase-item', 'P179' : 'wikibase-item',
+        'P18' : 'commonsMedia', 'P180' : 'wikibase-item', 'P181' : 'commonsMedia', 'P183' : 'wikibase-item',
+        'P184' : 'wikibase-item', 'P185' : 'wikibase-item', 'P186' : 'wikibase-item', 'P189' : 'wikibase-item',
+        'P19' : 'wikibase-item', 'P190' : 'wikibase-item', 'P193' : 'wikibase-item', 'P194' : 'wikibase-item',
+        'P195' : 'wikibase-item', 'P196' : 'wikibase-item', 'P197' : 'wikibase-item', 'P198' : 'wikibase-item',
+        'P199' : 'wikibase-item', 'P20' : 'wikibase-item', 'P200' : 'wikibase-item', 'P201' : 'wikibase-item',
+        'P202' : 'wikibase-item', 'P205' : 'wikibase-item', 'P206' : 'wikibase-item', 'P208' : 'wikibase-item',
+        'P209' : 'wikibase-item', 'P21' : 'wikibase-item', 'P212' : 'string', 'P213' : 'string',
+        'P214' : 'string', 'P215' : 'string', 'P217' : 'string', 'P218' : 'string',
+        'P219' : 'string', 'P22' : 'wikibase-item', 'P220' : 'string', 'P223' : 'string',
+        'P225' : 'string', 'P227' : 'string', 'P229' : 'string', 'P230' : 'string',
+        'P231' : 'string', 'P232' : 'string', 'P233' : 'string', 'P234' : 'string',
+        'P235' : 'string', 'P236' : 'string', 'P237' : 'wikibase-item', 'P238' : 'string',
+        'P239' : 'string', 'P240' : 'string', 'P241' : 'wikibase-item', 'P242' : 'commonsMedia',
+        'P243' : 'string', 'P244' : 'string', 'P245' : 'string', 'P246' : 'string',
+        'P247' : 'string', 'P248' : 'wikibase-item', 'P249' : 'string', 'P25' : 'wikibase-item',
+        'P26' : 'wikibase-item', 'P263' : 'wikibase-item', 'P264' : 'wikibase-item', 'P267' : 'string',
+        'P268' : 'string', 'P269' : 'string', 'P27' : 'wikibase-item', 'P270' : 'string',
+        'P271' : 'string', 'P272' : 'wikibase-item', 'P273' : 'wikibase-item', 'P274' : 'string',
+        'P275' : 'wikibase-item', 'P276' : 'wikibase-item', 'P277' : 'wikibase-item', 'P278' : 'string',
+        'P279' : 'wikibase-item', 'P281' : 'string', 'P282' : 'wikibase-item', 'P286' : 'wikibase-item',
+        'P287' : 'wikibase-item', 'P289' : 'wikibase-item', 'P291' : 'wikibase-item', 'P295' : 'wikibase-item',
+        'P296' : 'string', 'P297' : 'string', 'P298' : 'string', 'P299' : 'string',
+        'P30' : 'wikibase-item', 'P300' : 'string', 'P301' : 'wikibase-item', 'P304' : 'string',
+        'P305' : 'string', 'P306' : 'wikibase-item', 'P31' : 'wikibase-item', 'P344' : 'wikibase-item',
+        'P345' : 'string', 'P347' : 'string', 'P348' : 'string', 'P349' : 'string',
+        'P35' : 'wikibase-item', 'P351' : 'string', 'P352' : 'string', 'P353' : 'string',
+        'P354' : 'string', 'P355' : 'wikibase-item', 'P356' : 'string', 'P357' : 'string',
+        'P358' : 'wikibase-item', 'P359' : 'string', 'P36' : 'wikibase-item', 'P360' : 'wikibase-item',
+        'P361' : 'wikibase-item', 'P364' : 'wikibase-item', 'P366' : 'wikibase-item', 'P367' : 'commonsMedia',
+        'P37' : 'wikibase-item', 'P370' : 'string', 'P371' : 'wikibase-item', 'P373' : 'string',
+        'P374' : 'string', 'P375' : 'wikibase-item', 'P376' : 'wikibase-item', 'P377' : 'string',
+        'P38' : 'wikibase-item', 'P380' : 'string', 'P381' : 'string', 'P382' : 'string',
+        'P387' : 'string', 'P39' : 'wikibase-item', 'P392' : 'string', 'P393' : 'string',
+        'P395' : 'string', 'P396' : 'string', 'P397' : 'wikibase-item', 'P398' : 'wikibase-item',
+        'P399' : 'wikibase-item', 'P40' : 'wikibase-item', 'P400' : 'wikibase-item', 'P402' : 'string',
+        'P403' : 'wikibase-item', 'P404' : 'wikibase-item', 'P405' : 'wikibase-item', 'P406' : 'wikibase-item',
+        'P407' : 'wikibase-item', 'P408' : 'wikibase-item', 'P409' : 'string', 'P41' : 'commonsMedia',
+        'P410' : 'wikibase-item', 'P411' : 'wikibase-item', 'P412' : 'wikibase-item', 'P413' : 'wikibase-item',
+        'P414' : 'wikibase-item', 'P416' : 'string', 'P417' : 'wikibase-item', 'P418' : 'wikibase-item',
+        'P421' : 'wikibase-item', 'P423' : 'wikibase-item', 'P424' : 'string', 'P425' : 'wikibase-item',
+        'P427' : 'wikibase-item', 'P428' : 'string', 'P429' : 'string', 'P43' : 'wikibase-item',
+        'P432' : 'string', 'P433' : 'string', 'P434' : 'string', 'P435' : 'string',
+        'P436' : 'string', 'P437' : 'wikibase-item', 'P438' : 'string', 'P439' : 'string',
+        'P44' : 'wikibase-item', 'P440' : 'string', 'P442' : 'string', 'P443' : 'commonsMedia',
+        'P444' : 'string', 'P447' : 'wikibase-item', 'P448' : 'wikibase-item', 'P449' : 'wikibase-item',
+        'P45' : 'wikibase-item', 'P450' : 'wikibase-item', 'P451' : 'wikibase-item', 'P452' : 'wikibase-item',
+        'P453' : 'wikibase-item', 'P454' : 'string', 'P455' : 'string', 'P457' : 'wikibase-item',
+        'P459' : 'wikibase-item', 'P460' : 'wikibase-item', 'P461' : 'wikibase-item', 'P462' : 'wikibase-item',
+        'P463' : 'wikibase-item', 'P465' : 'string', 'P466' : 'wikibase-item', 'P467' : 'wikibase-item',
+        'P469' : 'wikibase-item', 'P47' : 'wikibase-item', 'P470' : 'wikibase-item', 'P473' : 'string',
+        'P474' : 'string', 'P476' : 'string', 'P477' : 'string', 'P478' : 'string',
+        'P480' : 'string', 'P483' : 'wikibase-item', 'P484' : 'string', 'P485' : 'wikibase-item',
+        'P486' : 'string', 'P487' : 'string', 'P488' : 'wikibase-item', 'P489' : 'wikibase-item',
+        'P490' : 'string', 'P491' : 'commonsMedia', 'P492' : 'string', 'P493' : 'string',
+        'P494' : 'string', 'P495' : 'wikibase-item', 'P498' : 'string', 'P50' : 'wikibase-item',
+        'P500' : 'wikibase-item', 'P501' : 'wikibase-item', 'P503' : 'string', 'P504' : 'wikibase-item',
+        'P506' : 'string', 'P507' : 'string', 'P508' : 'string', 'P509' : 'wikibase-item',
+        'P51' : 'commonsMedia', 'P511' : 'wikibase-item', 'P512' : 'wikibase-item', 'P513' : 'string',
+        'P516' : 'wikibase-item', 'P517' : 'wikibase-item', 'P518' : 'wikibase-item', 'P520' : 'wikibase-item',
+        'P522' : 'wikibase-item', 'P523' : 'wikibase-item', 'P524' : 'wikibase-item', 'P525' : 'string',
+        'P527' : 'wikibase-item', 'P528' : 'string', 'P529' : 'string', 'P53' : 'wikibase-item',
+        'P530' : 'wikibase-item', 'P531' : 'wikibase-item', 'P534' : 'wikibase-item', 'P535' : 'string',
+        'P536' : 'string', 'P54' : 'wikibase-item', 'P542' : 'wikibase-item', 'P543' : 'wikibase-item',
+        'P545' : 'wikibase-item', 'P547' : 'wikibase-item', 'P549' : 'string', 'P551' : 'wikibase-item',
+        'P552' : 'wikibase-item', 'P553' : 'wikibase-item', 'P554' : 'string', 'P555' : 'string',
+        'P556' : 'wikibase-item', 'P557' : 'string', 'P558' : 'string', 'P559' : 'wikibase-item',
+        'P560' : 'wikibase-item', 'P561' : 'string', 'P562' : 'wikibase-item', 'P563' : 'string',
+        'P564' : 'string', 'P566' : 'wikibase-item', 'P568' : 'wikibase-item', 'P569' : 'time',
+        'P57' : 'wikibase-item', 'P570' : 'time', 'P571' : 'time', 'P574' : 'time',
+        'P575' : 'time', 'P576' : 'time', 'P577' : 'time', 'P579' : 'wikibase-item',
+        'P58' : 'wikibase-item', 'P580' : 'time', 'P582' : 'time', 'P585' : 'time',
+        'P586' : 'string', 'P588' : 'wikibase-item', 'P589' : 'wikibase-item', 'P59' : 'wikibase-item',
+        'P590' : 'string', 'P592' : 'string', 'P593' : 'string', 'P594' : 'string',
+        'P595' : 'string', 'P597' : 'string', 'P598' : 'wikibase-item', 'P599' : 'string',
+        'P6' : 'wikibase-item', 'P60' : 'wikibase-item', 'P600' : 'string', 'P604' : 'string',
+        'P605' : 'string', 'P606' : 'time', 'P607' : 'wikibase-item', 'P608' : 'wikibase-item',
+        'P609' : 'wikibase-item', 'P61' : 'wikibase-item', 'P610' : 'wikibase-item', 'P611' : 'wikibase-item',
+        'P612' : 'wikibase-item', 'P613' : 'string', 'P618' : 'wikibase-item', 'P619' : 'time',
+        'P624' : 'wikibase-item', 'P625' : 'globe-coordinate', 'P627' : 'string', 'P628' : 'string',
+        'P629' : 'wikibase-item', 'P630' : 'string', 'P631' : 'wikibase-item', 'P634' : 'wikibase-item',
+        'P635' : 'string', 'P637' : 'string', 'P638' : 'string', 'P639' : 'string',
+        'P640' : 'string', 'P641' : 'wikibase-item', 'P642' : 'wikibase-item', 'P643' : 'string',
+        'P644' : 'string', 'P645' : 'string', 'P646' : 'string', 'P647' : 'wikibase-item',
+        'P648' : 'string', 'P649' : 'string', 'P65' : 'wikibase-item', 'P651' : 'string',
+        'P652' : 'string', 'P653' : 'string', 'P654' : 'wikibase-item', 'P655' : 'wikibase-item',
+        'P657' : 'string', 'P658' : 'wikibase-item', 'P66' : 'wikibase-item', 'P660' : 'wikibase-item',
+        'P661' : 'string', 'P662' : 'string', 'P664' : 'wikibase-item', 'P667' : 'string',
+        'P668' : 'string', 'P669' : 'wikibase-item', 'P670' : 'string', 'P672' : 'string',
+        'P673' : 'string', 'P674' : 'wikibase-item', 'P676' : 'wikibase-item', 'P680' : 'wikibase-item',
+        'P681' : 'wikibase-item', 'P682' : 'wikibase-item', 'P683' : 'string', 'P684' : 'wikibase-item',
+        'P685' : 'string', 'P686' : 'string', 'P687' : 'string', 'P688' : 'wikibase-item',
+        'P689' : 'wikibase-item', 'P69' : 'wikibase-item', 'P690' : 'wikibase-item', 'P691' : 'string',
+        'P695' : 'string', 'P696' : 'string', 'P697' : 'wikibase-item', 'P699' : 'string',
+        'P7' : 'wikibase-item', 'P70' : 'wikibase-item', 'P700' : 'string', 'P702' : 'wikibase-item',
+        'P703' : 'wikibase-item', 'P704' : 'string', 'P705' : 'string', 'P706' : 'wikibase-item',
+        'P708' : 'wikibase-item', 'P71' : 'wikibase-item', 'P710' : 'wikibase-item', 'P711' : 'string',
+        'P712' : 'string', 'P713' : 'string', 'P714' : 'string', 'P715' : 'string',
+        'P716' : 'string', 'P717' : 'string', 'P720' : 'wikibase-item', 'P721' : 'string',
+        'P722' : 'string', 'P723' : 'string', 'P727' : 'string', 'P728' : 'string',
+        'P729' : 'time', 'P730' : 'time', 'P734' : 'wikibase-item', 'P735' : 'wikibase-item',
+        'P739' : 'wikibase-item', 'P74' : 'wikibase-item', 'P740' : 'wikibase-item', 'P741' : 'wikibase-item',
+        'P742' : 'string', 'P743' : 'string', 'P744' : 'wikibase-item', 'P747' : 'wikibase-item',
+        'P748' : 'wikibase-item', 'P749' : 'wikibase-item', 'P75' : 'wikibase-item', 'P750' : 'wikibase-item',
+        'P757' : 'string', 'P758' : 'string', 'P76' : 'wikibase-item', 'P765' : 'wikibase-item',
+        'P766' : 'wikibase-item', 'P768' : 'wikibase-item', 'P77' : 'wikibase-item', 'P770' : 'wikibase-item',
+        'P771' : 'string', 'P772' : 'string', 'P773' : 'string', 'P774' : 'string',
+        'P775' : 'string', 'P78' : 'wikibase-item', 'P780' : 'wikibase-item', 'P782' : 'string',
+        'P790' : 'wikibase-item', 'P791' : 'string', 'P792' : 'string', 'P793' : 'wikibase-item',
+        'P794' : 'wikibase-item', 'P802' : 'wikibase-item', 'P804' : 'string', 'P805' : 'wikibase-item',
+        'P806' : 'string', 'P807' : 'wikibase-item', 'P809' : 'string', 'P81' : 'wikibase-item',
+        'P813' : 'time', 'P814' : 'wikibase-item', 'P815' : 'string', 'P816' : 'wikibase-item',
+        'P817' : 'wikibase-item', 'P821' : 'string', 'P824' : 'string', 'P825' : 'wikibase-item',
+        'P826' : 'wikibase-item', 'P827' : 'string', 'P828' : 'wikibase-item', 'P829' : 'string',
+        'P830' : 'string', 'P832' : 'wikibase-item', 'P833' : 'wikibase-item', 'P835' : 'string',
+        'P836' : 'string', 'P837' : 'wikibase-item', 'P838' : 'string', 'P839' : 'string',
+        'P84' : 'wikibase-item', 'P840' : 'wikibase-item', 'P841' : 'wikibase-item', 'P842' : 'string',
+        'P846' : 'string', 'P847' : 'string', 'P85' : 'wikibase-item', 'P852' : 'wikibase-item',
+        'P853' : 'wikibase-item', 'P854' : 'url', 'P856' : 'url', 'P858' : 'string',
+        'P86' : 'wikibase-item', 'P861' : 'string', 'P866' : 'string', 'P867' : 'string',
+        'P87' : 'wikibase-item', 'P870' : 'wikibase-item', 'P872' : 'wikibase-item', 'P873' : 'wikibase-item',
+        'P874' : 'string', 'P876' : 'string', 'P877' : 'string', 'P88' : 'wikibase-item',
+        'P880' : 'wikibase-item', 'P884' : 'string', 'P89' : 'wikibase-item', 'P897' : 'string',
+        'P898' : 'string', 'P9' : 'wikibase-item', 'P901' : 'string', 'P905' : 'string',
+        'P906' : 'string', 'P907' : 'string', 'P908' : 'wikibase-item', 'P91' : 'wikibase-item',
+        'P910' : 'wikibase-item', 'P913' : 'wikibase-item', 'P914' : 'wikibase-item', 'P92' : 'wikibase-item',
+        'P920' : 'string', 'P921' : 'wikibase-item', 'P923' : 'wikibase-item', 'P924' : 'wikibase-item',
+        'P931' : 'wikibase-item', 'P935' : 'string', 'P937' : 'wikibase-item', 'P939' : 'string',
+        'P94' : 'commonsMedia', 'P940' : 'string', 'P942' : 'wikibase-item', 'P944' : 'wikibase-item',
+        'P945' : 'wikibase-item', 'P947' : 'string', 'P948' : 'commonsMedia', 'P949' : 'string',
+        'P950' : 'string', 'P951' : 'string', 'P954' : 'string', 'P957' : 'string',
+        'P958' : 'string', 'P961' : 'string', 'P963' : 'url', 'P964' : 'string',
+        'P965' : 'string', 'P966' : 'string', 'P97' : 'wikibase-item', 'P971' : 'wikibase-item',
+        'P972' : 'wikibase-item', 'P973' : 'url', 'P98' : 'wikibase-item', 'P982' : 'string',
+        'P984' : 'string', 'P990' : 'commonsMedia', 'P991' : 'wikibase-item', 'P992' : 'wikibase-item',
+        'P993' : 'string', 'P994' : 'string', 'P995' : 'string', 'P998' : 'string'
 }
