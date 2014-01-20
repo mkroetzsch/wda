@@ -215,7 +215,7 @@ class DataFetcher:
 
 			if not os.path.exists('maxrevid.txt') :
 				maxrevSource = 'http://dumps.wikimedia.org/other/incr/wikidatawiki/' + daily + '/maxrevid.txt'
-				urllib.urlretrieve(retrieve, 'maxrevid.txt')
+				urllib.urlretrieve(maxrevSource, 'maxrevid.txt')
 			else:
 				maxrevSource = 'Local Max Rev File'
 			
