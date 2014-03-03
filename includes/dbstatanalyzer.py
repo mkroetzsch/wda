@@ -4,7 +4,7 @@
 import database
 import processinghelper
 import logging
-import time
+import os,time,sys
 import bitarray
 
 # Class to analyse previously created database contents for historic
@@ -42,7 +42,7 @@ class DBStatAnalyzer:
 
 	def getEmptyDayStats(self):
 		return { 'items': 0, 'changeditems':0, 'stats':0, 'statsr':0, 'statsq':0,\
-			'links':0, 'labels':0, 'descs':0, 'aliases':0 }
+			'links':0, 'labels':0, 'descs':0, 'aliases':0, 'itemswithstats':0 }
 
 	def makeStatistics(self):
 		self.startTime = time.time()
@@ -102,9 +102,11 @@ class DBStatAnalyzer:
 		self.dayStats[day]['descs'] += factor * row[9]
 		self.dayStats[day]['links'] += factor * row[10]
 		self.dayStats[day]['aliases'] += factor * row[11]
+		if row[5] > 0:
+			self.dayStats[day]['itemswithstats'] += factor
 
 	def writeResultSums(self, file):
-		file.write("date,total items,edited items,statements,statements w refs,statements w qualifiers,labels,descriptions,links,aliases\n")
+		file.write("date,total items,changed items,statements,statements w refs,statements w qualifiers,labels,descriptions,links,aliases,items with statements\n")
 		for day in self.days:
 			ymd = self.helper.getYMDFromWDDay(day)
 			file.write( "{0[0]:d}-{0[1]:02d}-{0[2]:02d},".format(ymd) )
@@ -116,4 +118,5 @@ class DBStatAnalyzer:
 			file.write( str(self.dayStats[day]['labels']) + ',')
 			file.write( str(self.dayStats[day]['descs']) + ',')
 			file.write( str(self.dayStats[day]['links']) + ',')
-			file.write( str(self.dayStats[day]['aliases']) + "\n")
+			file.write( str(self.dayStats[day]['aliases']) + ',')
+			file.write( str(self.dayStats[day]['itemswithstats']) + "\n")

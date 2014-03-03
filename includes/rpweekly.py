@@ -100,7 +100,10 @@ class RPWeekly(revisionprocessor.RevisionProcessor):
 				aliasLangs[langKey] = len(val['aliases'][langKey])
 				aliasNum += aliasLangs[langKey]
 
-			self.db.updateItemRevStatsData(id,self.curMaxRev,self.maxDay,str((labelLangs,descLangs,aliasLangs)),str((propsM,propsQ,propsR)), len(val['claims']), statRefNum, statQNum, len(val['label']), len(val['description']), len(val['links']), aliasNum)
+			self.db.updateItemRevStatsData(id,self.curMaxRev,self.maxDay,
+				#str((labelLangs,descLangs,aliasLangs)),str((propsM,propsQ,propsR)),
+				None, None, # disabled currently unused statistics
+				len(val['claims']), statRefNum, statQNum, len(val['label']), len(val['description']), len(val['links']), aliasNum)
 		else:
 			pass
 			#print "Not writing data for item " + self.curTitle + ' r' + str(self.curMaxRev)
@@ -120,7 +123,7 @@ class RPWeekly(revisionprocessor.RevisionProcessor):
 			for langKey in val['aliases']:
 				aliasLangs[langKey] = len(val['aliases'][langKey])
 				aliasNum += aliasLangs[langKey]
-			self.db.updatePropertyRevStatsData(id,self.curMaxRev,self.maxDay,str((labelLangs,descLangs,aliasLangs)),len(val['label']), len(val['description']),aliasNum)
+			self.db.updatePropertyRevStatsData(id,self.curMaxRev,self.maxDay,str((labelLangs,descLangs,aliasLangs)), len(val['label']), len(val['description']),aliasNum)
 		else:
 			pass
 			#print "Not writing data for prop " + self.curTitle + ' r' + str(self.curMaxRev)
