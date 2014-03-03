@@ -93,6 +93,11 @@
 		<rdfs:comment>The "URL" datatype of Wikibase properties.</rdfs:comment>
 	</wb:Datatype>
 
+	<wb:Datatype rdf:about="&wikibase;propertyTypeQuantity">
+		<rdfs:label>quantity</rdfs:label>
+		<rdfs:comment>The "quantity" datatype of Wikibase properties.</rdfs:comment>
+	</wb:Datatype>
+
 	<!-- Encoding coordinates datavalues -->
 
 	<owl:Class rdf:about="&wikibase;GlobeCoordinatesValue">
@@ -146,4 +151,26 @@
 		<rdfs:label>preferred calendar model</rdfs:label>
 		<rdfs:comment>This property specifies the preferred calendar to be used for displaying a time datavalue.</rdfs:comment>
 	</owl:ObjectProperty>
+
+	<!-- Encoding quantity datavalues -->
+
+	<owl:Class rdf:about="&wikibase;QuantityValue">
+		<rdfs:label>quantity datavalue</rdfs:label>
+		<rdfs:comment>The class of (reified) quantity datavalues.</rdfs:comment>
+	</owl:Class>
+
+	<owl:DatatypeProperty rdf:about="&wikibase;numericValue">
+		<rdfs:label>numeric value</rdfs:label>
+		<rdfs:comment>This property specifies the main numeric value of a quantity as an XML Schema decimal.</rdfs:comment>
+	</owl:DatatypeProperty>
+
+	<owl:DatatypeProperty rdf:about="&wikibase;lowerBound">
+		<rdfs:label>lower bound</rdfs:label>
+		<rdfs:comment>This property specifies a lower bound for the numeric value of a quantity as an XML Schema decimal.</rdfs:comment>
+	</owl:DatatypeProperty>
+
+	<owl:DatatypeProperty rdf:about="&wikibase;upperBound">
+		<rdfs:label>upper bound</rdfs:label>
+		<rdfs:comment>This property specifies an upper bound for the numeric value of a quantity as an XML Schema decimal.</rdfs:comment>
+	</owl:DatatypeProperty>
 </rdf:RDF>
