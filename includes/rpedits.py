@@ -22,12 +22,15 @@ class RPEditCount(revisionprocessor.RevisionProcessor):
 
 		logging.logMore('Loading list of bots ')
 		self.bots = []
-		botsjson = urllib.urlopen('http://www.wikidata.org/w/api.php?action=query&list=allusers&augroup=bot&aulimit=500&format=json').read()
-		botsdata = eval(botsjson)
-		for bot in botsdata['query']['allusers'] :
-			self.bots.append(bot['name'])
-			logging.logMore('.')
-		logging.log(' found ' + str(len(self.bots)) + ' bot accounts.')
+		try:
+			botsjson = urllib.urlopen('http://www.wikidata.org/w/api.php?action=query&list=allusers&augroup=bot&aulimit=500&format=json').read()
+			botsdata = eval(botsjson)
+			for bot in botsdata['query']['allusers'] :
+				self.bots.append(bot['name'])
+				logging.logMore('.')
+			logging.log(' found ' + str(len(self.bots)) + ' bot accounts.')
+		except IOError:
+			logging.log(' *** Error: Could not retrieve bot accounts. Bots will not be distinguished.')
 
 	def startPageBlock(self,title,isItem,isNew):
 		revisionprocessor.RevisionProcessor.startPageBlock(self,title,isItem,isNew)
